@@ -1,0 +1,2692 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="artifact-type" content="tool">
+  <meta name="design-style" content="kiln">
+  <title>AP 中文寫作模擬練習與 AI 診斷平台</title>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&family=Shippori+Mincho:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@1.43.0/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+
+      /* Kiln style palette: unbleached linen & sumi charcoal */
+      --background: #f4f1ea;
+      --surface-container-low: #ebe6db;
+      --surface-container: #e3ddd0;
+      --surface-container-high: #d9d1c2;
+      --surface-paper: #faf8f3;
+
+      --on-surface: #1c1b18;
+      --on-surface-variant: #5e5a51;
+
+      --outline: #1c1b18;
+      --outline-variant: #d2cbbd;
+
+      --primary: #1c1b18;
+      --on-primary: #f4f1ea;
+      --primary-container: #ebe6db;
+      --on-primary-container: #1c1b18;
+      --secondary: #4a5d46;
+      --secondary-soft: #e4eae2;
+      --tertiary: #9e3b2b;
+      --tertiary-soft: #f5e5e2;
+      --error: #9e2a22;
+      --on-error: #f4f1ea;
+
+      --positive: #3b5e3c;
+      --positive-soft: #e3ece3;
+      --warning: #8a5a19;
+      --warning-soft: #f4ead8;
+
+      --data-1: #4a5d46;
+      --data-2: #9e3b2b;
+      --data-3: #1c1b18;
+      --data-4: #8a6f48;
+      --data-context: #c7bfb0;
+
+      /* Comic illustration palette tokens */
+      --svg-bg: #faf8f3;
+      --svg-bg-alt: #ebe6db;
+      --svg-ink: #1c1b18;
+      --svg-muted: #787266;
+      --svg-moss: #4a5d46;
+      --svg-cinnabar: #9e3b2b;
+      --svg-ochre: #c89d54;
+      --svg-sky: #6f8c9b;
+
+      --focus: #4a5d46;
+
+      --font-headline: 'Noto Serif TC', 'Shippori Mincho', serif;
+      --font-body: 'Noto Sans TC', 'Plus Jakarta Sans', sans-serif;
+      --font-label: 'Geist Mono', 'Noto Sans TC', monospace;
+
+      --display-size: clamp(1.625rem, 1.35rem + 1vw, 2.125rem);
+      --headline-size: clamp(1.2rem, 1.05rem + 0.45vw, 1.45rem);
+      --subhead-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+      --body-size: clamp(0.9375rem, 0.9rem + 0.15vw, 1rem);
+      --label-size: 0.75rem;
+
+      --space-xs: 0.25rem;
+      --space-sm: 0.5rem;
+      --space-md: 1rem;
+      --space-lg: 1.5rem;
+      --space-xl: 2.25rem;
+      --space-2xl: 3.5rem;
+
+      --rounded: 0.125rem;
+      --rounded-lg: 0.25rem;
+
+      --rule-sumi-left: 2px solid var(--outline);
+      --rule-sumi: 1px solid var(--outline);
+      --rule-linen: 1px solid var(--outline-variant);
+      --label-tracking: 0.1em;
+
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+      --dur-micro: 120ms;
+      --dur-short: 220ms;
+      --dur-long: 420ms;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      overflow-x: clip;
+      margin: 0;
+      padding: 0;
+      background: var(--background);
+      color: var(--on-surface);
+      font-family: var(--font-body);
+      font-size: var(--body-size);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, select, textarea {
+      font-family: inherit;
+      color: inherit;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      border: 0;
+    }
+
+    /* Main Shell */
+    .studio-shell {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: var(--space-lg) var(--space-lg) var(--space-2xl);
+      display: grid;
+      gap: var(--space-lg);
+    }
+    .studio-shell * { min-width: 0; }
+
+    /* Header (non-sticky per layout rule) */
+    .masthead {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: var(--space-lg);
+      padding-bottom: var(--space-lg);
+      border-bottom: var(--rule-sumi);
+    }
+    .masthead-left {
+      display: grid;
+      gap: var(--space-xs);
+    }
+    .kicker {
+      font-family: var(--font-label);
+      font-size: var(--label-size);
+      color: var(--secondary);
+      font-weight: 500;
+      letter-spacing: 0.04em;
+    }
+    .page-title {
+      font-family: var(--font-headline);
+      font-weight: 600;
+      font-size: var(--display-size);
+      line-height: 1.18;
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+    .page-subtitle {
+      margin: 0;
+      color: var(--on-surface-variant);
+      font-size: var(--body-size);
+      max-width: 65ch;
+    }
+    .masthead-right {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-md);
+      flex-shrink: 0;
+    }
+    .seal-stamp {
+      border: 1px solid var(--tertiary);
+      color: var(--tertiary);
+      font-family: var(--font-label);
+      font-size: 0.75rem;
+      letter-spacing: 0.14em;
+      padding: 0.45rem 0.35rem;
+      writing-mode: vertical-rl;
+      line-height: 1.2;
+      user-select: none;
+    }
+
+    /* Command Bar: Task Switch + Prompt Picker + Timer */
+    .command-bar {
+      display: grid;
+      grid-template-columns: auto minmax(220px, 1fr) auto;
+      gap: var(--space-md);
+      align-items: end;
+      background: var(--surface-container-low);
+      border-left: var(--rule-sumi-left);
+      padding: var(--space-md) var(--space-lg);
+      border-radius: var(--rounded);
+    }
+
+    .field-group {
+      display: grid;
+      gap: var(--space-xs);
+    }
+    .field-label {
+      font-family: var(--font-label);
+      font-size: var(--label-size);
+      font-weight: 500;
+      color: var(--on-surface-variant);
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+
+    /* Segmented Task Switch */
+    .task-tabs {
+      display: inline-flex;
+      background: var(--surface-container);
+      border: var(--rule-linen);
+      border-radius: var(--rounded);
+      padding: 2px;
+      gap: 2px;
+    }
+    .task-tab {
+      min-height: 44px;
+      padding: 0 var(--space-md);
+      border: none;
+      background: transparent;
+      color: var(--on-surface-variant);
+      font-weight: 500;
+      font-size: 0.9375rem;
+      cursor: pointer;
+      border-radius: var(--rounded);
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+      transition: background-color var(--dur-short) var(--ease-in-out), color var(--dur-short) var(--ease-in-out);
+      white-space: nowrap;
+    }
+    .task-tab:hover {
+      background: var(--surface-container-high);
+      color: var(--on-surface);
+    }
+    .task-tab[aria-selected="true"] {
+      background: var(--primary);
+      color: var(--on-primary);
+    }
+
+    .prompt-controls {
+      display: flex;
+      gap: var(--space-sm);
+      align-items: end;
+    }
+    .select-control, .text-input {
+      min-height: 44px;
+      background: var(--surface-paper);
+      border: 1px solid var(--outline-variant);
+      border-radius: var(--rounded);
+      padding: 0.5rem 0.75rem;
+      font-size: 0.9375rem;
+      color: var(--on-surface);
+      transition: border-color var(--dur-micro) var(--ease-out), box-shadow var(--dur-micro) var(--ease-out);
+    }
+    .select-control {
+      flex: 1;
+      padding-right: 2rem;
+      cursor: pointer;
+    }
+    .select-control:hover, .text-input:hover {
+      border-color: var(--on-surface-variant);
+    }
+
+    /* Buttons */
+    .btn {
+      min-height: 44px;
+      padding: 0 var(--space-md);
+      border-radius: var(--rounded);
+      border: 1px solid var(--outline);
+      background: var(--surface-paper);
+      color: var(--on-surface);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out);
+    }
+    .btn:hover:not(:disabled) {
+      background: var(--surface-container);
+    }
+    .btn:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: var(--on-primary);
+      border-color: var(--primary);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--secondary);
+      border-color: var(--secondary);
+    }
+    .btn-accent {
+      background: var(--secondary);
+      color: var(--on-primary);
+      border-color: var(--secondary);
+    }
+    .btn-accent:hover:not(:disabled) {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+    .btn-seal {
+      background: var(--tertiary);
+      color: var(--on-primary);
+      border-color: var(--tertiary);
+    }
+    .btn-seal:hover:not(:disabled) {
+      background: var(--error);
+      border-color: var(--error);
+    }
+    .btn-quiet {
+      border-color: var(--outline-variant);
+      background: var(--surface-paper);
+    }
+
+    /* Timer Strip */
+    .timer-cluster {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      background: var(--surface-paper);
+      border: var(--rule-linen);
+      border-radius: var(--rounded);
+      padding: 0.25rem 0.65rem;
+      min-height: 44px;
+    }
+    .timer-readout {
+      font-family: var(--font-label);
+      font-size: 1.125rem;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      min-width: 5.5ch;
+      text-align: center;
+      color: var(--on-surface);
+    }
+    .timer-readout.is-urgent {
+      color: var(--tertiary);
+      font-weight: 600;
+    }
+    .timer-readout.is-unlimited {
+      font-size: 0.875rem;
+      color: var(--secondary);
+      min-width: 6.5ch;
+    }
+    .icon-btn {
+      min-width: 36px;
+      min-height: 36px;
+      padding: 0 0.45rem;
+      border: 1px solid var(--outline-variant);
+      background: var(--surface-container-low);
+      border-radius: var(--rounded);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--on-surface);
+      transition: background-color var(--dur-micro) var(--ease-out);
+    }
+    .icon-btn:hover { background: var(--surface-container-high); }
+
+    .toggle-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8125rem;
+      color: var(--on-surface-variant);
+      cursor: pointer;
+      padding-left: var(--space-xs);
+      border-left: var(--rule-linen);
+      user-select: none;
+    }
+    .toggle-pill input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--secondary);
+      cursor: pointer;
+    }
+
+    /* Main Workspace Grid: Left Prompt Canvas + Right Writing Desk */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.02fr) minmax(0, 1.15fr);
+      gap: var(--space-lg);
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--surface-paper);
+      border: var(--rule-linen);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-lg);
+      display: grid;
+      gap: var(--space-md);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: var(--space-md);
+      padding-bottom: var(--space-sm);
+      border-bottom: var(--rule-linen);
+    }
+    .panel-title {
+      font-family: var(--font-headline);
+      font-size: var(--headline-size);
+      font-weight: 600;
+      margin: 0;
+      line-height: 1.3;
+    }
+    .panel-meta {
+      font-family: var(--font-label);
+      font-size: var(--label-size);
+      color: var(--secondary);
+      font-weight: 500;
+    }
+
+    /* Story 4-Panel Grid (Strict: NO text hints below images, only sequence number) */
+    .story-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-md);
+    }
+    .story-frame {
+      position: relative;
+      background: var(--svg-bg);
+      border: 1.5px solid var(--outline);
+      border-radius: var(--rounded);
+      overflow: hidden;
+      aspect-ratio: 4 / 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .story-frame svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .frame-num {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      width: 24px;
+      height: 24px;
+      background: var(--primary);
+      color: var(--on-primary);
+      font-family: var(--font-label);
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--rounded);
+      z-index: 2;
+    }
+
+    .prompt-instruction {
+      background: var(--surface-container-low);
+      border-left: var(--rule-sumi-left);
+      padding: var(--space-sm) var(--space-md);
+      font-size: 0.9rem;
+      color: var(--on-surface-variant);
+      display: grid;
+      gap: 0.25rem;
+    }
+    .prompt-instruction strong {
+      color: var(--on-surface);
+    }
+
+    /* Email Card */
+    .email-card {
+      background: var(--surface-container-low);
+      border: var(--rule-linen);
+      border-left: var(--rule-sumi-left);
+      border-radius: var(--rounded);
+      padding: var(--space-lg);
+      display: grid;
+      gap: var(--space-md);
+    }
+    .email-meta-grid {
+      display: grid;
+      gap: 0.35rem;
+      padding-bottom: var(--space-sm);
+      border-bottom: var(--rule-linen);
+      font-size: 0.875rem;
+    }
+    .email-meta-row {
+      display: flex;
+      gap: var(--space-sm);
+      align-items: baseline;
+    }
+    .email-meta-key {
+      color: var(--on-surface-variant);
+      min-width: 5.5em;
+      font-weight: 500;
+    }
+    .email-body {
+      font-size: 1rem;
+      line-height: 1.75;
+      color: var(--on-surface);
+      display: grid;
+      gap: 0.75rem;
+    }
+    .email-body p { margin: 0; }
+    .register-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--rounded);
+      font-size: 0.75rem;
+      font-weight: 500;
+      background: var(--surface-paper);
+      border: 1px solid var(--outline-variant);
+      color: var(--secondary);
+    }
+
+    /* Writing Editor Panel */
+    .student-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--space-md);
+      align-items: end;
+    }
+    .editor-box {
+      width: 100%;
+      min-height: 330px;
+      padding: var(--space-md);
+      font-size: 1.125rem;
+      line-height: 1.85;
+      background: var(--surface-paper);
+      border: 1px solid var(--outline-variant);
+      border-radius: var(--rounded);
+      resize: vertical;
+      color: var(--on-surface);
+      transition: border-color var(--dur-micro) var(--ease-out), box-shadow var(--dur-micro) var(--ease-out);
+    }
+    .editor-box:focus {
+      border-color: var(--outline);
+      box-shadow: 0 0 0 2px var(--primary-container);
+      outline: none;
+    }
+
+    .stats-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--surface-container-low);
+      border-radius: var(--rounded);
+      font-size: 0.875rem;
+    }
+    .stat-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-md);
+      align-items: center;
+    }
+    .stat-item {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.35rem;
+      color: var(--on-surface-variant);
+    }
+    .stat-value {
+      font-family: var(--font-label);
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--on-surface);
+      font-variant-numeric: tabular-nums;
+    }
+    .draft-status {
+      font-size: 0.8125rem;
+      color: var(--secondary);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      align-items: center;
+      justify-content: space-between;
+    }
+    .action-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      align-items: center;
+    }
+
+    /* Inline status banner */
+    .inline-notice {
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--rounded);
+      font-size: 0.875rem;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-sm);
+      border-left: 3px solid var(--secondary);
+      background: var(--secondary-soft);
+      color: var(--on-surface);
+    }
+    .inline-notice.is-visible { display: flex; }
+    .inline-notice.is-error {
+      border-left-color: var(--error);
+      background: var(--tertiary-soft);
+    }
+
+    /* AI Diagnostic Report Section */
+    .ai-report {
+      background: var(--surface-paper);
+      border: 1.5px solid var(--outline);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-lg);
+      display: none;
+      gap: var(--space-lg);
+    }
+    .ai-report.is-visible {
+      display: grid;
+      animation: fadeSlide var(--dur-short) var(--ease-out);
+    }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .report-hero {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: var(--space-lg);
+      align-items: center;
+      padding-bottom: var(--space-md);
+      border-bottom: var(--rule-sumi);
+    }
+    .score-badge {
+      background: var(--primary);
+      color: var(--on-primary);
+      padding: var(--space-md) var(--space-lg);
+      border-radius: var(--rounded);
+      text-align: center;
+      min-width: 112px;
+    }
+    .score-big {
+      font-family: var(--font-headline);
+      font-size: 2.25rem;
+      font-weight: 700;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+    .score-sub {
+      font-family: var(--font-label);
+      font-size: 0.75rem;
+      opacity: 0.85;
+      margin-top: 2px;
+    }
+
+    .rubric-cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-md);
+    }
+    .washi-card {
+      background: var(--surface-container-low);
+      border-left: var(--rule-sumi-left);
+      border-radius: var(--rounded);
+      padding: var(--space-md);
+      display: grid;
+      gap: var(--space-xs);
+      align-content: start;
+    }
+    .washi-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: var(--space-sm);
+    }
+    .washi-card-label {
+      font-weight: 600;
+      font-size: 0.9375rem;
+      color: var(--on-surface);
+    }
+    .washi-card-score {
+      font-family: var(--font-headline);
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: var(--tertiary);
+      font-variant-numeric: tabular-nums;
+    }
+    .washi-card-note {
+      font-size: 0.875rem;
+      color: var(--on-surface-variant);
+      margin: 0;
+    }
+
+    .diagnostic-columns {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-md);
+    }
+    .diag-box {
+      background: var(--surface-container-low);
+      border: var(--rule-linen);
+      border-radius: var(--rounded);
+      padding: var(--space-md);
+      display: grid;
+      gap: var(--space-sm);
+      align-content: start;
+    }
+    .diag-box h4 {
+      margin: 0;
+      font-family: var(--font-headline);
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+    .diag-list {
+      margin: 0;
+      padding-left: 1.25rem;
+      display: grid;
+      gap: 0.4rem;
+      font-size: 0.9rem;
+    }
+    .upgrade-box {
+      background: var(--secondary-soft);
+      border-left: 3px solid var(--secondary);
+      padding: var(--space-md);
+      border-radius: var(--rounded);
+      display: grid;
+      gap: var(--space-sm);
+    }
+    .upgrade-box h4 {
+      margin: 0;
+      font-family: var(--font-headline);
+      color: var(--secondary);
+      font-size: 1rem;
+    }
+    .upgrade-text {
+      margin: 0;
+      font-size: 0.95rem;
+      line-height: 1.8;
+    }
+
+    /* Model Essay Section (8/8 with Full Sentence Pinyin + Trad/Simp Switch) */
+    .exemplar-section {
+      background: var(--surface-paper);
+      border: var(--rule-linen);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-lg);
+      display: grid;
+      gap: var(--space-md);
+    }
+    .exemplar-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-md);
+      padding-bottom: var(--space-sm);
+      border-bottom: var(--rule-sumi);
+    }
+    .exemplar-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      align-items: center;
+    }
+    .exemplar-body {
+      display: none;
+      gap: var(--space-md);
+    }
+    .exemplar-body.is-visible {
+      display: grid;
+    }
+    .sentence-pair {
+      padding: var(--space-sm) var(--space-md);
+      background: var(--surface-container-low);
+      border-left: 2px solid var(--secondary);
+      border-radius: var(--rounded);
+      display: grid;
+      gap: 0.25rem;
+    }
+    .sentence-zh {
+      font-size: 1.0625rem;
+      font-weight: 500;
+      color: var(--on-surface);
+      line-height: 1.7;
+    }
+    .sentence-py {
+      font-family: var(--font-label);
+      font-size: 0.875rem;
+      color: var(--secondary);
+      line-height: 1.55;
+      letter-spacing: 0.01em;
+    }
+
+    /* Official 8-Point Rubric Reference Modal / Drawer */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(28, 27, 24, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-lg);
+      z-index: 100;
+    }
+    .modal-backdrop.is-open {
+      display: flex;
+    }
+    .modal-dialog {
+      background: var(--surface-paper);
+      border: 2px solid var(--outline);
+      border-radius: var(--rounded-lg);
+      max-width: 980px;
+      width: 100%;
+      max-height: 88vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      overflow: hidden;
+    }
+    .modal-head {
+      padding: var(--space-md) var(--space-lg);
+      border-bottom: var(--rule-sumi);
+      background: var(--surface-container-low);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-md);
+    }
+    .modal-head h2 {
+      margin: 0;
+      font-family: var(--font-headline);
+      font-size: var(--headline-size);
+    }
+    .modal-scroll {
+      padding: var(--space-lg);
+      overflow-y: auto;
+      display: grid;
+      gap: var(--space-lg);
+    }
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    .rubric-table th, .rubric-table td {
+      padding: 0.65rem 0.75rem;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: var(--rule-linen);
+    }
+    .rubric-table thead th {
+      border-top: var(--rule-sumi);
+      border-bottom: var(--rule-sumi);
+      background: var(--surface-container-low);
+      font-weight: 600;
+    }
+    .checklist-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: var(--space-md);
+    }
+
+    /* Footer */
+    .studio-footer {
+      border-top: var(--rule-linen);
+      padding-top: var(--space-md);
+      font-size: 0.8125rem;
+      color: var(--on-surface-variant);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: var(--space-sm);
+    }
+
+    @media (max-width: 960px) {
+      .command-bar {
+        grid-template-columns: 1fr;
+      }
+      .workspace-grid {
+        grid-template-columns: 1fr;
+      }
+      .rubric-cards, .diagnostic-columns, .report-hero {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .studio-shell {
+        padding: var(--space-md) var(--space-sm) var(--space-xl);
+      }
+      .masthead {
+        flex-direction: column;
+      }
+      .seal-stamp {
+        writing-mode: horizontal-tb;
+      }
+      .story-grid {
+        grid-template-columns: 1fr;
+      }
+      .student-row {
+        grid-template-columns: 1fr;
+      }
+      .task-tabs {
+        width: 100%;
+      }
+      .task-tab {
+        flex: 1;
+        justify-content: center;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="studio-shell">
+    <!-- Header -->
+    <header class="masthead">
+      <div class="masthead-left">
+        <span class="kicker">AP CHINESE LANGUAGE &amp; CULTURE · FREE-RESPONSE WRITING STUDIO</span>
+        <h1 class="page-title">AP 中文寫作模擬練習與 AI 評分平台</h1>
+        <p class="page-subtitle">依據 2026 年 College Board 課程與考試大綱（8 分制 Analytic Rubric）設計，支援看圖說故事與電子郵件回覆全真練習、即時診斷與漢語拼音滿分範文。</p>
+      </div>
+      <div class="masthead-right">
+        <button type="button" class="btn btn-quiet" onclick="openRubricModal()">
+          <i data-lucide="book-open" aria-hidden="true"></i>
+          <span>官方 8 分制評分參考</span>
+        </button>
+        <div class="seal-stamp" aria-hidden="true">中文寫作</div>
+      </div>
+    </header>
+
+    <!-- Command Bar -->
+    <section class="command-bar" aria-label="練習任務與計時控制">
+      <div class="field-group">
+        <span class="field-label">寫作任務切換（佔總分 15%）</span>
+        <div class="task-tabs" role="tablist" aria-label="AP 中文寫作任務類型">
+          <button type="button" role="tab" id="tab-story" class="task-tab" aria-selected="true" onclick="switchTask('story')">
+            <i data-lucide="images" aria-hidden="true"></i>
+            <span>看圖說故事（Story Narration）</span>
+          </button>
+          <button type="button" role="tab" id="tab-email" class="task-tab" aria-selected="false" onclick="switchTask('email')">
+            <i data-lucide="mail" aria-hidden="true"></i>
+            <span>回覆電子信件（Email Response）</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="prompt-select">真題風格題庫（每類各 5 題）</label>
+        <div class="prompt-controls">
+          <select id="prompt-select" class="select-control" onchange="selectPrompt(this.value)"></select>
+          <button type="button" class="btn" onclick="randomPrompt()" title="隨機抽取一題">
+            <i data-lucide="dices" aria-hidden="true"></i>
+            <span>隨機選題</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <span class="field-label">考試計時（AP 規定 15 分鐘）</span>
+        <div class="timer-cluster">
+          <span id="timer-display" class="timer-readout">15:00</span>
+          <button type="button" id="timer-toggle-btn" class="icon-btn" onclick="toggleTimer()" title="開始 / 暫停計時" aria-label="開始或暫停計時">
+            <i data-lucide="play" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="icon-btn" onclick="resetTimer()" title="重置 15 分鐘" aria-label="重置計時器">
+            <i data-lucide="rotate-ccw" aria-hidden="true"></i>
+          </button>
+          <label class="toggle-pill" for="unlimited-toggle">
+            <input type="checkbox" id="unlimited-toggle" onchange="toggleUnlimitedMode(this.checked)">
+            <span>關閉計時</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Workspace -->
+    <main class="workspace-grid">
+      <!-- Left: Prompt Area -->
+      <section class="panel" aria-label="題目情境">
+        <div class="panel-header">
+          <div>
+            <span id="prompt-unit-tag" class="panel-meta">UNIT 1 · 社區與生活</span>
+            <h2 id="prompt-title" class="panel-title">圖書館遺失與尋回物品</h2>
+          </div>
+          <span id="prompt-weight-tag" class="register-badge">7.5% 考試權重 · 15 分鐘</span>
+        </div>
+
+        <div id="prompt-instruction" class="prompt-instruction"></div>
+        <div id="prompt-visual-container"></div>
+      </section>
+
+      <!-- Right: Writing Area -->
+      <section class="panel" aria-label="學生作答區">
+        <div class="panel-header">
+          <div>
+            <span class="panel-meta">AP 作答區 · 自動儲存草稿</span>
+            <h2 class="panel-title">中文輸入與即時統計</h2>
+          </div>
+          <span id="register-hint" class="register-badge">語域提示：敘事體（向朋友說故事）</span>
+        </div>
+
+        <div class="student-row">
+          <div class="field-group">
+            <label class="field-label" for="student-name">學生姓名（寄給老師時將自動帶入主旨）</label>
+            <input id="student-name" type="text" class="text-input" placeholder="例如：王小明 / Emily Wang" oninput="handleNameInput(this.value)">
+          </div>
+          <button type="button" class="btn btn-quiet" onclick="clearDraft(this)">
+            <i data-lucide="trash-2" aria-hidden="true"></i>
+            <span>清空重寫</span>
+          </button>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="essay-editor">作答內容（支援繁體／簡體中文輸入）</label>
+          <textarea id="essay-editor" class="editor-box" placeholder="請在此開始用中文寫作……建議看圖說故事約 200–300 字，回覆電子信件約 150–250 字。" oninput="handleEssayInput(this.value)"></textarea>
+        </div>
+
+        <div class="stats-bar">
+          <div class="stat-group">
+            <span class="stat-item">中文字數：<strong id="char-count" class="stat-value">0</strong> 字</span>
+            <span class="stat-item">總字元：<strong id="total-char-count" class="stat-value">0</strong></span>
+            <span class="stat-item">段落數：<strong id="para-count" class="stat-value">0</strong> 段</span>
+            <span id="length-target-badge" class="register-badge">目標：200+ 字</span>
+          </div>
+          <span id="draft-status" class="draft-status">
+            <i data-lucide="check-circle-2" aria-hidden="true"></i>
+            <span>草稿已自動儲存</span>
+          </span>
+        </div>
+
+        <div id="inline-notice" class="inline-notice" role="status">
+          <span id="inline-notice-text"></span>
+          <button type="button" class="icon-btn" onclick="hideNotice()" aria-label="關閉訊息">
+            <i data-lucide="x" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <div class="action-row">
+          <div class="action-group">
+            <button type="button" class="btn btn-seal" onclick="runAiDiagnosis()">
+              <i data-lucide="sparkles" aria-hidden="true"></i>
+              <span>AI 智能評分 / 即時診斷</span>
+            </button>
+            <button type="button" class="btn btn-accent" onclick="copyAiPrompt()">
+              <i data-lucide="bot" aria-hidden="true"></i>
+              <span>一鍵複製 AI 批改 Prompt</span>
+            </button>
+          </div>
+          <div class="action-group">
+            <a id="mailto-teacher-btn" href="mailto:letsenjoymndarin@gmail.com" class="btn btn-primary" onclick="return prepareTeacherEmail(event)">
+              <i data-lucide="send" aria-hidden="true"></i>
+              <span>直接寄給老師</span>
+            </a>
+            <button type="button" class="btn" onclick="downloadSubmission()">
+              <i data-lucide="download" aria-hidden="true"></i>
+              <span>下載作答檔案</span>
+            </button>
+            <button type="button" class="btn" onclick="copyEssayText()">
+              <i data-lucide="copy" aria-hidden="true"></i>
+              <span>複製全文</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- AI Diagnostic Report Output -->
+    <section id="ai-report" class="ai-report" aria-live="polite" aria-label="AI 8分制模擬評分報告">
+      <div class="report-hero">
+        <div class="score-badge">
+          <div id="report-total-score" class="score-big">0 / 8</div>
+          <div id="report-ap-band" class="score-sub">AP 預估表現</div>
+        </div>
+        <div>
+          <span class="panel-meta">COLLEGE BOARD 8 分制 ANALYTIC RUBRIC 即時診斷</span>
+          <h3 id="report-headline" class="panel-title" style="margin-top: 2px;">評分報告已產生</h3>
+          <p id="report-summary" style="margin: 4px 0 0; color: var(--on-surface-variant); font-size: 0.9375rem;"></p>
+        </div>
+        <button type="button" class="btn btn-quiet" onclick="copyAiPrompt()">
+          <i data-lucide="bot" aria-hidden="true"></i>
+          <span>複製 Prompt 給外部 AI 複檢</span>
+        </button>
+      </div>
+
+      <div class="rubric-cards">
+        <div class="washi-card">
+          <div class="washi-card-top">
+            <span id="row-a-title" class="washi-card-label">Row A · 敘事／訊息發展</span>
+            <span id="row-a-score" class="washi-card-score">0 / 3</span>
+          </div>
+          <p id="row-a-note" class="washi-card-note"></p>
+        </div>
+        <div class="washi-card">
+          <div class="washi-card-top">
+            <span class="washi-card-label">Row B · 組織結構與格式</span>
+            <span id="row-b-score" class="washi-card-score">0 / 2</span>
+          </div>
+          <p id="row-b-note" class="washi-card-note"></p>
+        </div>
+        <div class="washi-card">
+          <div class="washi-card-top">
+            <span class="washi-card-label">Row C · 語言控制力與語域</span>
+            <span id="row-c-score" class="washi-card-score">0 / 3</span>
+          </div>
+          <p id="row-c-note" class="washi-card-note"></p>
+        </div>
+      </div>
+
+      <div class="diagnostic-columns">
+        <div class="diag-box">
+          <h4><i data-lucide="award" aria-hidden="true"></i> 寫作亮點剖析</h4>
+          <ul id="diag-strengths" class="diag-list"></ul>
+        </div>
+        <div class="diag-box">
+          <h4><i data-lucide="wrench" aria-hidden="true"></i> 扣分原因與錯別字／病句／語域修正</h4>
+          <ul id="diag-fixes" class="diag-list"></ul>
+        </div>
+      </div>
+
+      <div class="upgrade-box">
+        <h4><i data-lucide="trending-up" aria-hidden="true"></i> 升級至 8/8 滿分示範改寫建議</h4>
+        <p id="diag-upgrade" class="upgrade-text"></p>
+      </div>
+    </section>
+
+    <!-- Model Exemplar Section -->
+    <section class="exemplar-section" aria-label="滿分參考範文與漢語拼音">
+      <div class="exemplar-header">
+        <div>
+          <span class="panel-meta">8 / 8 滿分標竿 · 逐句完整漢語拼音</span>
+          <h3 class="panel-title" style="margin-top: 2px;">滿分參考範文（Model Response with Pinyin）</h3>
+        </div>
+        <div class="exemplar-controls">
+          <div class="task-tabs" role="group" aria-label="繁簡中文切換">
+            <button type="button" id="btn-trad" class="task-tab" aria-selected="true" onclick="setScriptVariant('trad')">繁體中文</button>
+            <button type="button" id="btn-simp" class="task-tab" aria-selected="false" onclick="setScriptVariant('simp')">簡體中文</button>
+          </div>
+          <button type="button" id="toggle-pinyin-btn" class="btn btn-quiet" onclick="togglePinyinDisplay()">
+            <i data-lucide="languages" aria-hidden="true"></i>
+            <span>隱藏拼音</span>
+          </button>
+          <button type="button" id="toggle-exemplar-btn" class="btn btn-primary" onclick="toggleExemplar()">
+            <i data-lucide="eye" aria-hidden="true"></i>
+            <span>顯示滿分範文</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="exemplar-body" class="exemplar-body"></div>
+    </section>
+
+    <footer class="studio-footer">
+      <span>評分規準依據：College Board AP Chinese Language and Culture CED (Fall 2026) 8 分制 Analytic Rubric。</span>
+      <span>建議搭配老師批改（letsenjoymndarin@gmail.com）與外部 LLM 交叉複檢使用。</span>
+    </footer>
+  </div>
+
+  <!-- Official 8-Point Scoring Reference Modal -->
+  <div id="rubric-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="rubric-modal-title" onclick="handleModalBackdropClick(event)">
+    <div class="modal-dialog">
+      <div class="modal-head">
+        <div>
+          <span class="panel-meta">COLLEGE BOARD OFFICIAL ANALYTIC RUBRIC (FALL 2026)</span>
+          <h2 id="rubric-modal-title">官方 8 分制評分參考指南</h2>
+        </div>
+        <button type="button" class="btn btn-quiet" onclick="closeRubricModal()">
+          <i data-lucide="x" aria-hidden="true"></i>
+          <span>關閉</span>
+        </button>
+      </div>
+      <div class="modal-scroll">
+        <div>
+          <h3 style="margin: 0 0 var(--space-sm); font-family: var(--font-headline);">Question 3：看圖說故事（Story Narration · 滿分 8 分）</h3>
+          <table class="rubric-table">
+            <thead>
+              <tr>
+                <th style="width: 18%;">評分維度</th>
+                <th style="width: 17%;">0 分</th>
+                <th style="width: 21%;">1 分</th>
+                <th style="width: 22%;">2 分</th>
+                <th style="width: 22%;">3 分（滿分）</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Row A<br>敘事發展 (0–3)</strong></td>
+                <td>未作答、離題或僅重複題目。</td>
+                <td>故事不完整，僅涵蓋 1–2 張圖，缺乏細節，僅像列舉圖片。</td>
+                <td>故事大致符合圖片，涵蓋至少 3 張圖，但缺少細節/對話或結尾未完成。</td>
+                <td>完整敘述符合全部 4 張圖的故事，包含人物情感、具體細節與自然對話，不看圖也能讀懂。</td>
+              </tr>
+              <tr>
+                <td><strong>Row B<br>組織結構 (0–2)</strong></td>
+                <td>缺乏組織與連貫性，嚴重阻礙理解。</td>
+                <td>有部分連結但流程不夠有條理；可能缺少開頭或結尾；重複使用單一連接詞。</td>
+                <td>結構清晰完整（起、承、轉、合），自然運用多種銜接詞（首先、突然、幸好、最後）提升流暢度。</td>
+                <td><em>（本欄最高 2 分）</em></td>
+              </tr>
+              <tr>
+                <td><strong>Row C<br>語言控制 (0–3)</strong></td>
+                <td>語法與詞彙嚴重受限，無法理解。</td>
+                <td>僅用有限高頻詞與斷裂簡單句，頻繁錯誤影響理解。</td>
+                <td>具備一定詞彙與基本句型，含少量複合句，偶有語法、用詞或標點錯誤影響理解。</td>
+                <td>廣泛運用多元詞彙、文化表達與成語，兼顧簡單句與複合句，無阻礙理解的語法或書寫規範錯誤。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div>
+          <h3 style="margin: 0 0 var(--space-sm); font-family: var(--font-headline);">Question 4：回覆電子信件（Email Response · 滿分 8 分）</h3>
+          <table class="rubric-table">
+            <thead>
+              <tr>
+                <th style="width: 18%;">評分維度</th>
+                <th style="width: 17%;">0 分</th>
+                <th style="width: 21%;">1 分</th>
+                <th style="width: 22%;">2 分</th>
+                <th style="width: 22%;">3 分（滿分）</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Row A<br>訊息發展 (0–3)</strong></td>
+                <td>未作答、離題或僅複述來信內容。</td>
+                <td>有回信但未回答任何核心提問，幾乎沒有細節與舉例。</td>
+                <td>至少回答一個主要請求，或雖答出所有問題但缺乏具體理由與例子。</td>
+                <td>清晰直接回應來信中的每一個問題與請求，並提供充分理由與相關舉例。</td>
+              </tr>
+              <tr>
+                <td><strong>Row B<br>組織與書信格式 (0–2)</strong></td>
+                <td>缺乏條理與連貫性，嚴重影響閱讀。</td>
+                <td>有部分結構但可能缺少稱謂（Greeting）或結尾祝詞/署名（Closing）；過渡詞單一。</td>
+                <td>結構邏輯嚴謹，具備完整中文書信禮儀（稱謂、問候、分段作答、祝詞、署名）與多樣銜接詞。</td>
+                <td><em>（本欄最高 2 分）</em></td>
+              </tr>
+              <tr>
+                <td><strong>Row C<br>語言控制與語域 (0–3)</strong></td>
+                <td>語法與詞彙錯誤嚴重阻礙理解。</td>
+                <td>高頻有限詞彙，語域完全不當（例如對師長過度隨便或語氣錯亂），錯誤多。</td>
+                <td>詞彙與句型尚可，偶爾出現語域漂移（如「您」「你」混用）或錯誤阻礙理解。</td>
+                <td>詞彙豐富並善用成語/文化表達，句型多元，全程保持一致且得體的語域（Register），無礙理解之錯誤。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div>
+          <h3 style="margin: 0 0 var(--space-sm); font-family: var(--font-headline);">8/8 滿分關鍵檢核清單</h3>
+          <div class="checklist-grid">
+            <div class="washi-card">
+              <span class="washi-card-label">01 · 看圖說故事必備</span>
+              <p class="washi-card-note">幫主角取名字（如小明、小美）、點出時間地點、加入一句人物對話或心理描寫、確保四格圖情節前後呼應。</p>
+            </div>
+            <div class="washi-card">
+              <span class="washi-card-label">02 · 回覆信件必備</span>
+              <p class="washi-card-note">開頭稱呼＋問候寒暄、逐題給予「明確立場＋理由＋具體例子」、確認師長用「您」/朋友用「你」全程不混用、結尾祝詞與署名。</p>
+            </div>
+            <div class="washi-card">
+              <span class="washi-card-label">03 · 語言升級技巧</span>
+              <p class="washi-card-note">使用「雖然…但是…」「不僅…而且…」「除了…以外」「越來越」等複合句，並自然融入 1–2 個成語（如一舉兩得、大吃一驚）。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <api-shim></api-shim>
+  <script>
+    /* Traditional <-> Simplified lookup map for exemplar toggling */
+    const T2S_PAIRS = [
+      ['這','这'],['個','个'],['們','们'],['來','来'],['圖','图'],['書','书'],['館','馆'],['遺','遗'],['尋','寻'],['時','时'],
+      ['週','周'],['發','发'],['現','现'],['裡','里'],['面','面'],['錢','钱'],['包','包'],['不','不'],['見','见'],['急','急'],
+      ['得','得'],['滿','满'],['頭','头'],['大','大'],['汗','汗'],['突','突'],['然','然'],['想','想'],['起','起'],['剛','刚'],
+      ['才','才'],['問','问'],['櫃','柜'],['檯','台'],['老','老'],['師','师'],['員','员'],['熱','热'],['心','心'],['幫','帮'],
+      ['查','查'],['找','找'],['原','原'],['來','来'],['被','被'],['好','好'],['學','学'],['生','生'],['撿','捡'],['交','交'],
+      ['到','到'],['失','失'],['物','物'],['招','招'],['領','领'],['處','处'],['失','失'],['而','而'],['復','复'],['得','得'],
+      ['非','非'],['常','常'],['感','感'],['謝','谢'],['寫','写'],['張','张'],['卡','卡'],['片','片'],['表','表'],['達','达'],
+      ['經','经'],['過','过'],['這','这'],['件','件'],['事','事'],['後','后'],['跳','跳'],['蚤','蚤'],['市','市'],['場','场'],
+      ['環','环'],['保','保'],['義','义'],['賣','卖'],['活','活'],['動','动'],['整','整'],['理','理'],['房','房'],['間','间'],
+      ['舊','旧'],['玩','玩'],['具','具'],['衣','衣'],['服','服'],['帶','带'],['去','去'],['攤','摊'],['位','位'],['吸','吸'],
+      ['引','引'],['很','很'],['多','多'],['鄰','邻'],['居','居'],['買','买'],['捐','捐'],['給','给'],['慈','慈'],['善','善'],
+      ['機','机'],['構','构'],['一','一'],['舉','举'],['兩','两'],['得','得'],['網','网'],['購','购'],['更','更'],['換','换'],
+      ['禮','礼'],['服','服'],['參','参'],['加','加'],['畢','毕'],['業','业'],['舞','舞'],['會','会'],['打','打'],['開','开'],
+      ['包','包'],['裹','裹'],['試','试'],['穿','穿'],['太','太'],['鬆','松'],['合','合'],['身','身'],['聯','联'],['絡','络'],
+      ['客','客'],['服','服'],['退','退'],['貨','货'],['寄','寄'],['新','新'],['尺','尺'],['寸','寸'],['終','终'],['於','于'],
+      ['準','准'],['備','备'],['好','好'],['行','行'],['李','李'],['箱','箱'],['拿','拿'],['錯','错'],['機','机'],['場','场'],
+      ['旅','旅'],['行','行'],['顏','颜'],['色','色'],['一','一'],['模','模'],['一','一'],['樣','样'],['電','电'],['話','话'],
+      ['號','号'],['碼','码'],['交','交'],['換','换'],['回','回'],['結','结'],['婚','婚'],['紀','纪'],['念','念'],['日','日'],
+      ['驚','惊'],['喜','喜'],['下','下'],['廚','厨'],['父','父'],['母','母'],['買','买'],['菜','菜'],['切','切'],['菜','菜'],
+      ['炒','炒'],['雖','虽'],['點','点'],['累','累'],['卻','却'],['幸','幸'],['福','福'],['開','开'],['心','心'],['文','文'],
+      ['化','化'],['展','展'],['覽','览'],['主','主'],['題','题'],['策','策'],['劃','划'],['敬','敬'],['愛','爱'],['您','您'],
+      ['收','收'],['信','信'],['高','高'],['興','兴'],['聽','听'],['說','说'],['舉','举'],['辦','办'],['建','建'],['議','议'],
+      ['傳','传'],['統','统'],['節','节'],['慶','庆'],['美','美'],['食','食'],['體','体'],['驗','验'],['書','书'],['法','法'],
+      ['剪','剪'],['紙','纸'],['宣','宣'],['傳','传'],['海','海'],['報','报'],['社','社'],['交','交'],['媒','媒'],['體','体'],
+      ['祝','祝'],['順','顺'],['利','利'],['學','学'],['校','校'],['園','园'],['減','减'],['塑','塑'],['設','设'],['立','立'],
+      ['回','回'],['收','收'],['站','站'],['鼓','鼓'],['勵','励'],['自','自'],['備','备'],['水','水'],['壺','壶'],['餐','餐'],
+      ['廳','厅'],['健','健'],['康','康'],['飲','饮'],['食','食'],['菜','菜'],['單','单'],['蔬','蔬'],['菜','菜'],['油','油'],
+      ['鹽','盐'],['營','营'],['養','养'],['均','均'],['衡','衡'],['接','接'],['待','待'],['交','交'],['換','换'],['生','生'],
+      ['計','计'],['畫','划'],['家','家'],['庭','庭'],['參','参'],['觀','观'],['名','名'],['勝','胜'],['古','古'],['蹟','迹'],
+      ['暑','暑'],['假','假'],['實','实'],['習','习'],['語','语'],['言','言'],['營','营'],['能','能'],['夠','够'],['提','提'],
+      ['升','升'],['口','口'],['語','语'],['瞭','了'],['解','解'],['應','应'],['該','该'],['注','注'],['意','意'],['點','点'],
+      ['種','种'],['類','类'],['豐','丰'],['富','富'],['錯','错'],['別','别'],['請','请'],['問','问'],['為','为'],['什','什'],
+      ['麼','么'],['因','因'],['所','所'],['但','但'],['而','而'],['且','且'],['除','除'],['外','外'],['越','越'],['來','来'],
+      ['讓','让'],['覺','觉'],['真','真'],['正','正'],['關','关'],['係','系'],['重','重'],['要','要'],['認','认'],['識','识'],
+      ['際','际'],['交','交'],['流','流'],['區','区'],['資','资'],['源','源'],['節','节'],['省','省'],['環','环'],['境','境'],
+      ['衛','卫'],['生','生'],['健','健'],['康','康'],['愛','爱'],['護','护'],['地','地'],['球','球'],['專','专'],['門','门'],
+      ['設','设'],['計','计'],['討','讨'],['論','论'],['決','决'],['定','定'],['準','准'],['時','时'],['順','顺'],['便','便'],
+      ['號','号'],['牌','牌'],['簽','签'],['名','名'],['貼','贴'],['紙','纸'],['記','记'],['得','得'],['忘','忘'],['記','记'],
+      ['條','条'],['件','件'],['難','难'],['題','题'],['辦','办'],['法','法'],['解','解'],['決','决'],['參','参'],['與','与'],
+      ['響','响'],['應','应'],['積','积'],['極','极'],['優','优'],['點','点'],['缺','缺'],['點','点'],['改','改'],['善','善'],
+      ['增','增'],['加','加'],['減','减'],['少','少'],['選','选'],['擇','择'],['適','适'],['合','合'],['歡','欢'],['迎','迎'],
+      ['陪','陪'],['伴','伴'],['導','导'],['覽','览'],['講','讲'],['解','解'],['趣','趣'],['味','味'],['留','留'],['下','下'],
+      ['深','深'],['刻','刻'],['印','印'],['象','象'],['滿','满'],['懷','怀'],['期','期'],['待','待'],['誠','诚'],['摯','挚'],
+      ['上','上'],['電','电'],['郵','邮'],['件','件'],['回','回'],['覆','复'],['題','题'],['目','目'],['內','内'],['容','容'],
+      ['鐘','钟'],['分','分'],['鐘','钟'],['秒','秒'],['萬','万'],['無','无'],['一','一'],['失','失'],['誤','误'],['會','会'],
+      ['尷','尴'],['尬','尬'],['鬆','松'],['口','口'],['氣','气'],['笑','笑'],['起','起'],['來','来'],['互','互'],['相','相'],
+      ['道','道'],['歉','歉'],['緊','紧'],['張','张'],['放','放'],['心','心'],['桌','桌'],['子','子'],['椅','椅'],['子','子'],
+      ['裡','里'],['邊','边'],['旁','旁'],['邊','边'],['對','对'],['面','面'],['拿','拿'],['著','着'],['背','背'],['包','包'],
+      ['書','书'],['本','本'],['筆','笔'],['電','电'],['腦','脑'],['手','手'],['機','机'],['照','照'],['片','片'],['畫','画'],
+      ['廚','厨'],['房','房'],['鍋','锅'],['碗','碗'],['盤','盘'],['香','香'],['味','味'],['飄','飘'],['滿','满'],['屋','屋'],
+      ['爸','爸'],['媽','妈'],['進','进'],['門','门'],['看','看'],['見','见'],['驚','惊'],['訝','讶'],['感','感'],['動','动'],
+      ['眼','眼'],['眶','眶'],['泛','泛'],['淚','泪'],['舉','举'],['杯','杯'],['慶','庆'],['祝','祝'],['樂','乐'],['融','融'],
+      ['融','融'],['話','话'],['題','题'],['熱','热'],['鬧','闹'],['溫','温'],['暖','暖'],['深','深'],['厚','厚'],['情','情'],
+      ['誼','谊'],['寶','宝'],['貴','贵'],['經','经'],['驗','验'],['成','成'],['長','长'],['收','收'],['穫','获'],['頗','颇']
+    ];
+
+    function toSimplified(text) {
+      let out = text;
+      for (let i = 0; i < T2S_PAIRS.length; i++) {
+        const [t, s] = T2S_PAIRS[i];
+        if (t !== s && out.includes(t)) {
+          out = out.split(t).join(s);
+        }
+      }
+      return out;
+    }
+
+    /* Hand-crafted 4-panel SVG comic renderer (NO text hints beneath panels) */
+    function renderComicPanel(storyId, stepIdx) {
+      const C = {
+        bg: 'var(--svg-bg)',
+        alt: 'var(--svg-bg-alt)',
+        ink: 'var(--svg-ink)',
+        muted: 'var(--svg-muted)',
+        moss: 'var(--svg-moss)',
+        red: 'var(--svg-cinnabar)',
+        ochre: 'var(--svg-ochre)',
+        sky: 'var(--svg-sky)'
+      };
+      const baseSvg = (inner) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" aria-hidden="true">${inner}</svg>`;
+
+      if (storyId === 'story-1') {
+        /* 1. 圖書館遺失與尋回物品 */
+        if (stepIdx === 0) return baseSvg(`
+          <rect width="320" height="240" fill="${C.bg}"/>
+          <rect x="20" y="25" width="70" height="145" fill="${C.alt}" stroke="${C.ink}" stroke-width="2"/>
+          <line x1="25" y1="60" x2="85" y2="60" stroke="${C.ink}" stroke-width="2"/>
+          <line x1="25" y1="100" x2="85" y2="100" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="30" y="34" width="10" height="26" fill="${C.moss}" stroke="${C.ink}" stroke-width="1.5"/>
+          <rect x="42" y="36" width="10" height="24" fill="${C.ochre}" stroke="${C.ink}" stroke-width="1.5"/>
+          <rect x="55" y="72" width="12" height="28" fill="${C.red}" stroke="${C.ink}" stroke-width="1.5"/>
+          <rect x="120" y="135" width="160" height="12" fill="${C.alt}" stroke="${C.ink}" stroke-width="2"/>
+          <line x1="135" y1="147" x2="135" y2="210" stroke="${C.ink}" stroke-width="3"/>
+          <line x1="265" y1="147" x2="265" y2="210" stroke="${C.ink}" stroke-width="3"/>
+          <circle cx="195" cy="82" r="18" fill="${C.bg}" stroke="${C.ink}" stroke-width="2.2"/>
+          <path d="M175 135 C175 108, 215 108, 215 135" fill="${C.moss}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="180" y="122" width="32" height="13" fill="${C.bg}" stroke="${C.ink}" stroke-width="1.8"/>
+          <rect x="235" y="118" width="24" height="16" rx="2" fill="${C.red}" stroke="${C.ink}" stroke-width="1.8"/>
+          <path d="M235 123 L259 123" stroke="${C.ink}" stroke-width="1.5"/>
+        `);
+        if (stepIdx === 1) return baseSvg(`
+          <rect width="320" height="240" fill="${C.bg}"/>
+          <rect x="30" y="150" width="260" height="14" fill="${C.alt}" stroke="${C.ink}" stroke-width="2"/>
+          <circle cx="135" cy="92" r="20" fill="${C.bg}" stroke="${C.ink}" stroke-width="2.2"/>
+          <path d="M128 89 L133 89 M141 89 L146 89 M131 101 Q137 96 143 101" stroke="${C.ink}" stroke-width="2" fill="none"/>
+          <path d="M112 150 C112 118, 158 118, 158 150" fill="${C.moss}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M158 135 L195 120" stroke="${C.ink}" stroke-width="2.2"/>
+          <rect x="195" y="124" width="38" height="26" rx="3" fill="${C.ochre}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M168 62 Q178 46 188 60 Q192 70 180 76 L180 82" fill="none" stroke="${C.red}" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="180" cy="90" r="2.2" fill="${C.red}"/>
+          <path d="M105 80 Q100 88 106 90 Q112 88 105 80 Z" fill="${C.sky}" stroke="${C.ink}" stroke-width="1.2"/>
+        `);
+        if (stepIdx === 2) return baseSvg(`
+          <rect width="320" height="240" fill="${C.bg}"/>
+          <rect x="40" y="140" width="240" height="55" fill="${C.alt}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="52" y="152" width="90" height="24" fill="${C.bg}" stroke="${C.ink}" stroke-width="1.5"/>
+          <circle cx="96" cy="96" r="18" fill="${C.bg}" stroke="${C.ink}" stroke-width="2.2"/>
+          <path d="M74 140 C74 114, 118 114, 118 140" fill="${C.sky}" stroke="${C.ink}" stroke-width="2"/>
+          <circle cx="215" cy="96" r="18" fill="${C.bg}" stroke="${C.ink}" stroke-width="2.2"/>
+          <path d="M193 140 C193 114, 237 114, 237 140" fill="${C.moss}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="135" y="116" width="26" height="17" rx="2" fill="${C.red}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M122 125 L134 125" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M162 125 L190 125" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M88 65 L112 65 L105 78 L95 78 Z" fill="none" stroke="${C.ink}" stroke-width="1.5"/>
+        `);
+        return baseSvg(`
+          <rect width="320" height="240" fill="${C.bg}"/>
+          <circle cx="115" cy="95" r="20" fill="${C.bg}" stroke="${C.ink}" stroke-width="2.2"/>
+          <path d="M107 92 Q111 88 115 92 M119 92 Q123 88 127 92 M109 101 Q116 108 123 101" stroke="${C.ink}" stroke-width="2" fill="none"/>
+          <path d="M90 165 C90 122, 140 122, 140 165" fill="${C.moss}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="138" y="128" width="24" height="16" rx="2" fill="${C.red}" stroke="${C.ink}" stroke-width="1.8"/>
+          <circle cx="215" cy="95" r="20" fill="${C.bg}" stroke="${C.ink}" stroke-width="2.2"/>
+          <path d="M207 92 Q211 88 215 92 M219 92 Q223 88 227 92 M209 101 Q216 108 223 101" stroke="${C.ink}" stroke-width="2" fill="none"/>
+          <path d="M190 165 C190 122, 240 122, 240 165" fill="${C.sky}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="160" y="138" width="30" height="22" fill="${C.bg}" stroke="${C.ink}" stroke-width="1.8"/>
+          <path d="M168 148 L175 154 L184 144" stroke="${C.red}" stroke-width="2" fill="none"/>
+          <path d="M165 55 C165 45, 178 45, 178 55 C178 45, 191 45, 191 55 C191 66, 178 75, 178 75 C178 75, 165 66, 165 55 Z" fill="${C.red}"/>
+        `);
+      }
+
+      if (storyId === 'story-2') {
+        /* 2. 跳蚤市場環保義賣 */
+        if (stepIdx === 0) return baseSvg(`
+          <rect width="320" height="240" fill="${C.bg}"/>
+          <rect x="35" y="150" width="250" height="60" fill="${C.alt}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="180" y="110" width="80" height="45" fill="${C.ochre}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M180 125 L260 125" stroke="${C.ink}" stroke-width="1.5"/>
+          <circle cx="105" cy="90" r="19" fill="${C.bg}" stroke="${C.ink}" stroke-width="2.2"/>
+          <path d="M82 150 C82 115, 128 115, 128 150" fill="${C.moss}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="195" y="90" width="18" height="20" fill="${C.red}" stroke="${C.ink}" stroke-width="1.6"/>
+          <rect x="220" y="84" width="22" height="26" fill="${C.sky}" stroke="${C.ink}" stroke-width="1.6"/>
+          <circle cx="246" cy="98" r="9" fill="${C.bg}" stroke="${C.ink}" stroke-width="1.6"/>
+        `);
+        if (stepIdx === 1) return baseSvg(`
+          <rect width="320" height="240" fill="${C.bg}"/>
+          <rect x="40" y="138" width="240" height="14" fill="${C.alt}" stroke="${C.ink}" stroke-width="2"/>
+          <line x1="60" y1="152" x2="60" y2="210" stroke="${C.ink}" stroke-width="3"/>
+          <line x1="260" y1="152" x2="260" y2="210" stroke="${C.ink}" stroke-width="3"/>
+          <path d="M40 60 L280 60 L265 85 L55 85 Z" fill="${C.moss}" stroke="${C.ink}" stroke-width="2"/>
+          <circle cx="110" cy="105" r="16" fill="${C.bg}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M90 138 C90 122, 130 122, 130 138" fill="${C.ochre}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="160" y="112" width="28" height="26" fill="${C.sky}" stroke="${C.ink}" stroke-width="1.8"/>
+          <rect x="196" y="120" width="22" height="18" fill="${C.red}" stroke="${C.ink}" stroke-width="1.8"/>
+          <circle cx="238" cy="126" r="12" fill="${C.bg}" stroke="${C.ink}" stroke-width="1.8"/>
+        `);
+        if (stepIdx === 2) return baseSvg(`
+          <rect width="320" height="240" fill="${C.bg}"/>
+          <rect x="30" y="146" width="260" height="14" fill="${C.alt}" stroke="${C.ink}" stroke-width="2"/>
+          <circle cx="95" cy="95" r="17" fill="${C.bg}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M75 146 C75 118, 115 118, 115 146" fill="${C.moss}" stroke="${C.ink}" stroke-width="2"/>
+          <circle cx="195" cy="92" r="17" fill="${C.bg}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M175 162 C175 120, 215 120, 215 162" fill="${C.red}" stroke="${C.ink}" stroke-width="2"/>
+          <circle cx="252" cy="112" r="13" fill="${C.bg}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M236 162 C236 132, 268 132, 268 162" fill="${C.sky}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="132" y="120" width="28" height="24" fill="${C.ochre}" stroke="${C.ink}" stroke-width="1.8"/>
+          <circle cx="152" cy="112" r="8" fill="${C.ochre}" stroke="${C.ink}" stroke-width="1.5"/>
+        `);
+        return baseSvg(`
+          <rect width="320" height="240" fill="${C.bg}"/>
+          <rect x="175" y="110" width="85" height="75" rx="4" fill="${C.alt}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="195" y="116" width="45" height="6" fill="${C.ink}"/>
+          <path d="M207 148 C207 139, 218 139, 218 148 C218 139, 229 139, 229 148 C229 158, 218 166, 218 166 C218 166, 207 158, 207 148 Z" fill="${C.red}"/>
+          <circle cx="95" cy="90" r="19" fill="${C.bg}" stroke="${C.ink}" stroke-width="2.2"/>
+          <path d="M72 170 C72 120, 118 120, 118 170" fill="${C.moss}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="128" y="96" width="30" height="20" fill="${C.ochre}" stroke="${C.ink}" stroke-width="1.8"/>
+          <path d="M158 106 L195 112" stroke="${C.ink}" stroke-width="2" stroke-dasharray="4 3"/>
+        `);
+      }
+
+      if (storyId === 'story-3') {
+        /* 3. 網購更換禮服 */
+        if (stepIdx === 0) return baseSvg(`
+          <rect width="320" height="240" fill="${C.bg}"/>
+          <rect x="65" y="55" width="140" height="92" rx="4" fill="${C.alt}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="75" y="65" width="120" height="72" fill="${C.bg}" stroke="${C.ink}" stroke-width="1.5"/>
+          <path d="M125 78 L145 78 L152 102 L144 128 L126 128 L118 102 Z" fill="${C.red}" stroke="${C.ink}" stroke-width="1.8"/>
+          <rect x="45" y="147" width="180" height="12" fill="${C.ink}"/>
+          <circle cx="245" cy="95" r="19" fill="${C.bg}" stroke="${C.ink}" stroke-width="2.2"/>
+          <path d="M222 165 C222 122, 268 122, 268 165" fill="${C.moss}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M180 120 L215 128" stroke="${C.ink}" stroke-width="2"/>
+        `);
+        if (stepIdx === 1) return baseSvg(`
+          <rect width="320" height="240" fill="${C.bg}"/>
+          <rect x="36" y="140" width="76" height="58" fill="${C.ochre}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M36 140 L26 122 L68 122 L74 140 M74 140 L84 122 L122 122 L112 140" fill="${C.alt}" stroke="${C.ink}" stroke-width="1.8"/>
+          <circle cx="195" cy="70" r="18" fill="${C.bg}" stroke="${C.ink}" stroke-width="2.2"/>
+          <path d="M188 68 L192 68 M200 68 L204 68 M191 79 Q196 74 202 79" stroke="${C.ink}" stroke-width="1.8" fill="none"/>
+          <path d="M162 110 L228 110 L242 188 L148 188 Z" fill="${C.red}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M150 132 L138 145 M240 132 L252 145" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M250 66 L262 56 M252 78 L266 76" stroke="${C.red}" stroke-width="2.2"/>
+        `);
+        if (stepIdx === 2) return baseSvg(`
+          <rect width="320" height="240" fill="${C.bg}"/>
+          <circle cx="95" cy="95" r="19" fill="${C.bg}" stroke="${C.ink}" stroke-width="2.2"/>
+          <path d="M72 165 C72 122, 118 122, 118 165" fill="${C.moss}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="122" y="88" width="18" height="30" rx="3" fill="${C.ink}"/>
+          <rect x="175" y="75" width="95" height="65" rx="4" fill="${C.alt}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M200 108 L212 96 L224 108 M212 96 L212 122" stroke="${C.moss}" stroke-width="2.5" fill="none"/>
+          <rect x="188" y="152" width="70" height="44" fill="${C.ochre}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M148 104 Q162 96 170 104" stroke="${C.ink}" stroke-width="2" fill="none" stroke-dasharray="3 3"/>
+        `);
+        return baseSvg(`
+          <rect width="320" height="240" fill="${C.bg}"/>
+          <rect x="40" y="38" width="92" height="156" rx="4" fill="${C.alt}" stroke="${C.ink}" stroke-width="2.2"/>
+          <rect x="50" y="48" width="72" height="136" fill="${C.bg}" stroke="${C.ink}" stroke-width="1.5"/>
+          <circle cx="200" cy="70" r="19" fill="${C.bg}" stroke="${C.ink}" stroke-width="2.2"/>
+          <path d="M192 68 Q196 64 200 68 M204 68 Q208 64 212 68 M194 78 Q201 84 208 78" stroke="${C.ink}" stroke-width="1.8" fill="none"/>
+          <path d="M178 102 L222 102 L232 182 L168 182 Z" fill="${C.red}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M250 62 L256 74 L268 76 L258 84 L260 96 L250 89 L240 96 L242 84 L232 76 L244 74 Z" fill="${C.ochre}" stroke="${C.ink}" stroke-width="1.5"/>
+        `);
+      }
+
+      if (storyId === 'story-4') {
+        /* 4. 行李箱拿錯 */
+        if (stepIdx === 0) return baseSvg(`
+          <rect width="320" height="240" fill="${C.bg}"/>
+          <rect x="20" y="155" width="280" height="28" rx="12" fill="${C.alt}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="65" y="96" width="52" height="62" rx="4" fill="${C.sky}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="83" y="76" width="16" height="20" fill="none" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="136" y="96" width="52" height="62" rx="4" fill="${C.sky}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="154" y="76" width="16" height="20" fill="none" stroke="${C.ink}" stroke-width="2"/>
+          <circle cx="242" cy="85" r="18" fill="${C.bg}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M222 150 C222 114, 262 114, 262 150" fill="${C.moss}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M225 130 L190 120" stroke="${C.ink}" stroke-width="2.2"/>
+        `);
+        if (stepIdx === 1) return baseSvg(`
+          <rect width="320" height="240" fill="${C.bg}"/>
+          <rect x="42" y="128" width="108" height="72" rx="4" fill="${C.sky}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="52" y="138" width="88" height="52" fill="${C.bg}" stroke="${C.ink}" stroke-width="1.5"/>
+          <path d="M72 150 L96 150 L102 180 L66 180 Z" fill="${C.red}" stroke="${C.ink}" stroke-width="1.6"/>
+          <rect x="110" y="152" width="22" height="28" fill="${C.ochre}" stroke="${C.ink}" stroke-width="1.6"/>
+          <circle cx="225" cy="90" r="20" fill="${C.bg}" stroke="${C.ink}" stroke-width="2.2"/>
+          <circle cx="218" cy="87" r="2" fill="${C.ink}"/>
+          <circle cx="232" cy="87" r="2" fill="${C.ink}"/>
+          <circle cx="225" cy="99" r="4" fill="none" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M202 156 C202 118, 248 118, 248 156" fill="${C.moss}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M254 54 L254 74" stroke="${C.red}" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="254" cy="82" r="2.2" fill="${C.red}"/>
+        `);
+        if (stepIdx === 2) return baseSvg(`
+          <rect width="320" height="240" fill="${C.bg}"/>
+          <rect x="180" y="132" width="60" height="44" fill="${C.alt}" stroke="${C.ink}" stroke-width="2"/>
+          <line x1="188" y1="146" x2="232" y2="146" stroke="${C.ink}" stroke-width="1.8"/>
+          <line x1="188" y1="158" x2="220" y2="158" stroke="${C.ink}" stroke-width="1.8"/>
+          <circle cx="95" cy="95" r="19" fill="${C.bg}" stroke="${C.ink}" stroke-width="2.2"/>
+          <path d="M72 170 C72 124, 118 124, 118 170" fill="${C.moss}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="124" y="88" width="16" height="28" rx="3" fill="${C.ink}"/>
+          <path d="M148 92 Q160 84 166 96" stroke="${C.moss}" stroke-width="2" fill="none"/>
+          <path d="M154 84 Q170 74 176 92" stroke="${C.moss}" stroke-width="2" fill="none"/>
+        `);
+        return baseSvg(`
+          <rect width="320" height="240" fill="${C.bg}"/>
+          <circle cx="90" cy="90" r="18" fill="${C.bg}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M70 165 C70 120, 110 120, 110 165" fill="${C.moss}" stroke="${C.ink}" stroke-width="2"/>
+          <circle cx="230" cy="90" r="18" fill="${C.bg}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M210 165 C210 120, 250 120, 250 165" fill="${C.red}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="115" y="120" width="38" height="48" rx="4" fill="${C.sky}" stroke="${C.ink}" stroke-width="2"/>
+          <rect x="167" y="120" width="38" height="48" rx="4" fill="${C.sky}" stroke="${C.ink}" stroke-width="2"/>
+          <path d="M138 92 L182 92 M174 86 L182 92 L174 98 M146 104 L190 104 M146 98 L138 104 L146 110" stroke="${C.ochre}" stroke-width="2.2" fill="none"/>
+        `);
+      }
+
+      /* 5. 結婚紀念日驚喜下廚 */
+      if (stepIdx === 0) return baseSvg(`
+        <rect width="320" height="240" fill="${C.bg}"/>
+        <rect x="35" y="45" width="72" height="72" rx="4" fill="${C.alt}" stroke="${C.ink}" stroke-width="2"/>
+        <rect x="35" y="45" width="72" height="18" fill="${C.red}" stroke="${C.ink}" stroke-width="2"/>
+        <path d="M62 84 C62 76, 71 76, 71 84 C71 76, 80 76, 80 84 C80 94, 71 102, 71 102 C71 102, 62 94, 62 84 Z" fill="${C.red}"/>
+        <circle cx="195" cy="88" r="18" fill="${C.bg}" stroke="${C.ink}" stroke-width="2"/>
+        <path d="M174 155 C174 116, 216 116, 216 155" fill="${C.moss}" stroke="${C.ink}" stroke-width="2"/>
+        <circle cx="252" cy="96" r="15" fill="${C.bg}" stroke="${C.ink}" stroke-width="2"/>
+        <path d="M234 155 C234 122, 270 122, 270 155" fill="${C.sky}" stroke="${C.ink}" stroke-width="2"/>
+        <path d="M124 85 Q150 65 170 80" stroke="${C.ink}" stroke-width="1.8" stroke-dasharray="3 3" fill="none"/>
+      `);
+      if (stepIdx === 1) return baseSvg(`
+        <rect width="320" height="240" fill="${C.bg}"/>
+        <rect x="35" y="142" width="250" height="14" fill="${C.alt}" stroke="${C.ink}" stroke-width="2"/>
+        <circle cx="110" cy="88" r="18" fill="${C.bg}" stroke="${C.ink}" stroke-width="2"/>
+        <path d="M90 142 C90 112, 130 112, 130 142" fill="${C.moss}" stroke="${C.ink}" stroke-width="2"/>
+        <ellipse cx="185" cy="135" rx="34" ry="8" fill="${C.ink}"/>
+        <line x1="219" y1="135" x2="256" y2="128" stroke="${C.ink}" stroke-width="3.5"/>
+        <path d="M172 115 Q168 100 176 90 M190 115 Q186 98 194 88" stroke="${C.red}" stroke-width="2" fill="none"/>
+        <circle cx="242" cy="95" r="15" fill="${C.bg}" stroke="${C.ink}" stroke-width="2"/>
+        <path d="M225 142 C225 118, 259 118, 259 142" fill="${C.sky}" stroke="${C.ink}" stroke-width="2"/>
+      `);
+      if (stepIdx === 2) return baseSvg(`
+        <rect width="320" height="240" fill="${C.bg}"/>
+        <rect x="35" y="45" width="58" height="135" fill="${C.alt}" stroke="${C.ink}" stroke-width="2"/>
+        <circle cx="135" cy="92" r="18" fill="${C.bg}" stroke="${C.ink}" stroke-width="2"/>
+        <path d="M115 162 C115 120, 155 120, 155 162" fill="${C.ochre}" stroke="${C.ink}" stroke-width="2"/>
+        <circle cx="195" cy="92" r="18" fill="${C.bg}" stroke="${C.ink}" stroke-width="2"/>
+        <path d="M175 162 C175 120, 215 120, 215 162" fill="${C.red}" stroke="${C.ink}" stroke-width="2"/>
+        <rect x="235" y="130" width="56" height="32" fill="${C.bg}" stroke="${C.ink}" stroke-width="2"/>
+        <ellipse cx="263" cy="130" rx="22" ry="7" fill="${C.moss}" stroke="${C.ink}" stroke-width="1.8"/>
+        <path d="M165 56 C165 46, 178 46, 178 56 C178 46, 191 46, 191 56 C191 67, 178 76, 178 76 C178 76, 165 67, 165 56 Z" fill="${C.red}"/>
+      `);
+      return baseSvg(`
+        <rect width="320" height="240" fill="${C.bg}"/>
+        <rect x="45" y="148" width="230" height="14" fill="${C.alt}" stroke="${C.ink}" stroke-width="2"/>
+        <circle cx="95" cy="95" r="17" fill="${C.bg}" stroke="${C.ink}" stroke-width="2"/>
+        <path d="M75 148 C75 118, 115 118, 115 148" fill="${C.ochre}" stroke="${C.ink}" stroke-width="2"/>
+        <circle cx="160" cy="88" r="17" fill="${C.bg}" stroke="${C.ink}" stroke-width="2"/>
+        <path d="M140 148 C140 112, 180 112, 180 148" fill="${C.red}" stroke="${C.ink}" stroke-width="2"/>
+        <circle cx="225" cy="95" r="17" fill="${C.bg}" stroke="${C.ink}" stroke-width="2"/>
+        <path d="M205 148 C205 118, 245 118, 245 148" fill="${C.moss}" stroke="${C.ink}" stroke-width="2"/>
+        <ellipse cx="160" cy="144" rx="28" ry="6" fill="${C.bg}" stroke="${C.ink}" stroke-width="1.8"/>
+        <path d="M145 50 L152 60 L164 60 L155 68 L158 78 L145 71 L132 78 L135 68 L126 60 L138 60 Z" fill="${C.ochre}" stroke="${C.ink}" stroke-width="1.4"/>
+      `);
+    }
+
+    const STORY_PROMPTS = [
+      {
+        id: 'story-1',
+        unit: 'UNIT 1 · 社區與人際互助',
+        title: '圖書館遺失與尋回物品',
+        instruction: '這四張圖描寫了一個完整的故事。請想像你正在把這個故事寫給朋友看。請依照四張圖的順序敘述一個有頭有尾（開端、發展、轉折、結局）的完整故事。',
+        targetChars: 220,
+        keyConcepts: ['圖書館', '看書', '錢包', '找', '櫃檯', '撿到', '感謝'],
+        upgradeTip: '「上個週末，小明在圖書館專心看書。準備回家時，他突然發現自己的紅色錢包不見了，急得滿頭大汗。他立刻去服務檯詢問管理員，沒想到已經有好心的同學把錢包送到失物招領處。錢包失而復得，小明非常感動，特地寫了一張感謝卡表達謝意。」',
+        exemplar: [
+          { zh: '上個星期六下午，小華去學校附近的圖書館看書複習功課。', py: 'Shàng ge xīngqīliù xiàwǔ, Xiǎohuá qù xuéxiào fùjìn de túshūguǎn kàn shū fùxí gōngkè.' },
+          { zh: '他在書架旁邊選了幾本喜歡的書，就坐在靠窗的桌子前專心閱讀。', py: 'Tā zài shūjià pángbiān xuǎn le jǐ běn xǐhuan de shū, jiù zuò zài kào chuāng de zhuōzi qián zhuānxīn yuèdú.' },
+          { zh: '到了傍晚準備回家的時候，他突然發現原本放在桌上的紅色錢包不見了！', py: 'Dào le bàngwǎn zhǔnbèi huí jiā de shíhou, tā tūrán fāxiàn yuánběn fàng zài zhuō shàng de hóngsè qiánbāo bújiàn le!' },
+          { zh: '小華急得滿頭大汗，趕緊在書包和桌子底下到處翻找，卻怎麼也找不到。', py: 'Xiǎohuá jí de mǎn tóu dà hàn, gǎnjǐn zài shūbāo hé zhuōzi dǐxia dàochù fānzhǎo, què zěnme yě zhǎo bu dào.' },
+          { zh: '正當他不知所措的時候，他決定去一樓的服務櫃檯問問圖書館員。', py: 'Zhèngdāng tā bùzhīsuǒcuò de shíhou, tā juédìng qù yīlóu de fúwù guìtái wènwen túshūguǎnyuán.' },
+          { zh: '沒想到，親切的館員笑著告訴他：「別擔心，剛才有位好心的同學撿到一個錢包，已經送到這裡來了！」', py: 'Méixiǎngdào, qīnqiè de guǎnyuán xiàozhe gàosu tā: "Bié dānxīn, gāngcái yǒu wèi hǎoxīn de tóngxué jiǎndào yí ge qiánbāo, yǐjīng sòngdào zhèlǐ lái le!"' },
+          { zh: '小華核對了裡面的證件後，發現錢包失而復得，真是又驚又喜。', py: 'Xiǎohuá héduì le lǐmiàn de zhèngjiàn hòu, fāxiàn qiánbāo shī’érfùdé, zhēn shì yòu jīng yòu xǐ.' },
+          { zh: '最後，他不僅向館員連聲道謝，還寫了一張感謝卡請館員轉交給那位熱心的同學。', py: 'Zuìhòu, tā bùjǐn xiàng guǎnyuán liánshēng dàoxiè, hái xiě le yì zhāng gǎnxièkǎ qǐng guǎnyuán zhuǎnjiāo gěi nà wèi rèxīn de tóngxué.' }
+        ]
+      },
+      {
+        id: 'story-2',
+        unit: 'UNIT 6 · 社區環保與公益',
+        title: '跳蚤市場環保義賣',
+        instruction: '這四張圖描寫了一個完整的故事。請想像你正在把這個故事寫給朋友看。請依照四張圖的順序敘述一個有頭有尾（開端、發展、轉折、結局）的完整故事。',
+        targetChars: 220,
+        keyConcepts: ['整理', '舊', '跳蚤市場', '義賣', '買', '捐', '環保'],
+        upgradeTip: '「為了響應環保，小美週末在家裡整理出許多八成新的舊玩具和書籍，帶到社區的跳蚤市場擺攤。許多鄰居和小朋友都熱情地來挑選，不到半天就賣光了。最後，她把義賣所得全數捐給慈善機構，既減少浪費又幫助他人，真是一舉兩得。」',
+        exemplar: [
+          { zh: '上個週末，小美在整理房間時，發現櫃子裡有許多已經不常用但還很新的玩具、書籍和背包。', py: 'Shàng ge zhōumò, Xiǎoměi zài zhěnglǐ fángjiān shí, fāxiàn guìzi lǐ yǒu xǔduō yǐjīng bù cháng yòng dàn hái hěn xīn de wánjù, shūjí hé bēibāo.' },
+          { zh: '為了響應社區的環保愛地球活動，她決定參加星期天早上舉辦的跳蚤市場義賣。', py: 'Wèile xiǎngyìng shèqū de huánbǎo ài dìqiú huódòng, tā juédìng cānjiā xīngqītiān zǎoshang jǔbàn de tiàozǎo shìchǎng yìmài.' },
+          { zh: '活動當天，她早早把東西整齊地擺在攤位上，還親手畫了一張可愛的環保海報。', py: 'Huódòng dāngtiān, tā zǎozǎo bǎ dōngxi zhěngqí de bǎi zài tānwèi shàng, hái qīnshǒu huà le yì zhāng kě’ài de huánbǎo hǎibào.' },
+          { zh: '很快地，許多鄰居和小朋友被她的攤位吸引過來，大家紛紛挑選自己喜歡的物品。', py: 'Hěn kuài de, xǔduō línjū hé xiǎopéngyǒu bèi tā de tānwèi xīyǐn guòlái, dàjiā fēnfēn tiāoxuǎn zìjǐ xǐhuan de wùpǐn.' },
+          { zh: '小美熱情地介紹每一件物品的故事，大家一邊聊天一邊挑東西，氣氛非常熱鬧。', py: 'Xiǎoměi rèqíng de jièshào měi yí jiàn wùpǐn de gùshi, dàjiā yìbiān liáotiān yìbiān tiāo dōngxi, qìfēn fēicháng rènào.' },
+          { zh: '到了中午，所有的二手物品幾乎都找到了新主人。', py: 'Dào le zhōngwǔ, suǒyǒu de èrshǒu wùpǐn jīhū dōu zhǎodào le xīn zhǔrén.' },
+          { zh: '最後，小美把義賣賺到的錢全部投入慈善機構的捐款箱裡。', py: 'Zuìhòu, Xiǎoměi bǎ yìmài zhuàndào de qián quánbù tóurù císhàn jīgòu de juānkuǎnxiāng lǐ.' },
+          { zh: '這次活動不僅讓資源循環再利用，還能幫助有需要的人，真是一舉兩得！', py: 'Zhè cì huódòng bùjǐn ràng zīyuán xúnhuán zài lìyòng, hái néng bāngzhù yǒu xūyào de rén, zhēn shì yìjǔliǎngdé!' }
+        ]
+      },
+      {
+        id: 'story-3',
+        unit: 'UNIT 5 · 現代生活與消費',
+        title: '網購更換禮服',
+        instruction: '這四張圖描寫了一個完整的故事。請想像你正在把這個故事寫給朋友看。請依照四張圖的順序敘述一個有頭有尾（開端、發展、轉折、結局）的完整故事。',
+        targetChars: 220,
+        keyConcepts: ['網購', '禮服', '試穿', '太大', '客服', '換貨', '合身'],
+        upgradeTip: '「為了參加下週的畢業舞會，小芳在網路上訂購了一件漂亮的紅色禮服。幾天後包裹送到，她滿懷期待地試穿，卻大吃一驚——尺寸太大了！她立刻聯繫客服說明情況並辦理退換貨。幸好商家效率很高，及時寄來合身的新禮服，讓她開心地迎接舞會。」',
+        exemplar: [
+          { zh: '下個月學校就要舉辦畢業舞會了，小芳在網路商店裡看到一件非常優雅的紅色禮服。', py: 'Xià ge yuè xuéxiào jiùyào jǔbàn bìyè wǔhuì le, Xiǎofāng zài wǎnglù shāngdiàn lǐ kàndào yí jiàn fēicháng yōuyǎ de hóngsè lǐfú.' },
+          { zh: '她覺得款式很適合自己，於是馬上下了訂單，期待著包裹趕快寄來。', py: 'Tā juéde kuǎnshì hěn shìhé zìjǐ, yúshì mǎshàng xià le dìngdān, qīdàizhe bāoguǒ gǎnkuài jì lái.' },
+          { zh: '過了幾天，快遞終於把包裹送到家裡，小芳興奮地打開紙箱試穿。', py: 'Guò le jǐ tiān, kuàidì zhōngyú bǎ bāoguǒ sòngdào jiālǐ, Xiǎofāng xīngfèn de dǎkāi zhǐxiāng shìchuān.' },
+          { zh: '沒想到一穿上才發現，這件禮服的尺寸實在太大、太寬鬆了，完全不合身！', py: 'Méixiǎngdào yì chuānshàng cái fāxiàn, zhè jiàn lǐfú de chǐcùn shízài tài dà, tài kuānsōng le, wánquán bù héshēn!' },
+          { zh: '小芳頓時感到非常著急，趕緊拿起手機聯絡網店的客服人員說明問題。', py: 'Xiǎofāng dùnshí gǎndào fēicháng zháojí, gǎnjǐn náqǐ shǒujī liánluò wǎngdiàn de kèfú rényuán shuōmíng wèntí.' },
+          { zh: '幸好客服態度十分親切，馬上同意為她辦理免費換貨，並請快遞來收回原本的包裹。', py: 'Xìnghǎo kèfú tàidù shífēn qīnqiè, mǎshàng tóngyì wèi tā bànlǐ miǎnfèi huànhuò, bìng qǐng kuàidì lái shōuhuí yuánběn de bāoguǒ.' },
+          { zh: '兩天後，合身的新禮服順利寄到了。小芳站在鏡子前轉了一圈，簡直像量身訂做一樣漂亮。', py: 'Liǎng tiān hòu, héshēn de xīn lǐfú shùnlì jìdào le. Xiǎofāng zhàn zài jìngzi qián zhuàn le yì quān, jiǎnzhí xiàng liángshēndìngzuò yíyàng piàoliang.' },
+          { zh: '經過這次網購經驗，她提醒自己以後買衣服前一定要先仔細核對尺寸表。', py: 'Jīngguò zhè cì wǎnggòu jīngyàn, tā tíxǐng zìjǐ yǐhòu mǎi yīfu qián yídìng yào xiān zǐxì héduì chǐcùnbiǎo.' }
+        ]
+      },
+      {
+        id: 'story-4',
+        unit: 'UNIT 5 · 旅遊與交通',
+        title: '行李箱拿錯',
+        instruction: '這四張圖描寫了一個完整的故事。請想像你正在把這個故事寫給朋友看。請依照四張圖的順序敘述一個有頭有尾（開端、發展、轉折、結局）的完整故事。',
+        targetChars: 220,
+        keyConcepts: ['機場', '行李箱', '一模一樣', '打開', '發現', '打電話', '交換'],
+        upgradeTip: '「大衛剛下飛機，在機場行李轉盤上看見一個熟悉的藍色行李箱，便拉著直接回飯店。打開行李箱時他大吃一驚，裡面竟然全是陌生的衣服和紀念品！幸好箱子裡有對方的行李牌與聯絡電話，大衛趕緊打電話約對方在車站見面，兩人互相道歉並順利換回各自的行李。」',
+        exemplar: [
+          { zh: '上個星期五，大衛搭飛機去外地旅行。下飛機後，他在機場的行李轉盤前等著拿行李。', py: 'Shàng ge xīngqīwǔ, Dàwèi dā fēijī qù wàidì lǚxíng. Xià fēijī hòu, tā zài jīchǎng de xíngli zhuǎnpán qián děngzhe ná xíngli.' },
+          { zh: '他看見一個藍色的行李箱轉了過來，以為是自己的，便高興地拉著離開了機場。', py: 'Tā kàndào yí ge lánsè de xínglixiāng zhuǎn le guòlái, yǐwéi shì zìjǐ de, biàn gāoxìng de lāzhe líkāi le jīchǎng.' },
+          { zh: '然而，回到旅館打開行李箱準備換衣服時，大衛竟然大吃一驚！', py: 'Rán’ér, huídào lǚguǎn dǎkāi xínglixiāng zhǔnbèi huàn yīfu shí, Dàwèi jìngrán dàchīyìjīng!' },
+          { zh: '箱子裡裝的根本不是他的衣服，而是一件紅色的洋裝和一些陌生的物品——他拿錯別人的行李了！', py: 'Xiāngzi lǐ zhuāng de gēnběn bú shì tā de yīfu, ér shì yí jiàn hóngsè de yángzhuāng hé yìxiē mòshēng de wùpǐn——tā ná cuò biérén de xíngli le!' },
+          { zh: '大衛急得趕緊檢查箱子上的吊牌，幸好上面寫著失主的姓名和電話號碼。', py: 'Dàwèi jí de gǎnjǐn jiǎnchá xiāngzi shàng de diàopái, xìnghǎo shàngmiàn xiězhe shīzhǔ de xìngmíng hé diànhuà hàomǎ.' },
+          { zh: '他立刻撥通電話，原來那位女士也剛好拿錯了他一模一樣的藍色行李箱，正著急地想聯絡他呢！', py: 'Tā lìkè bōtōng diànhuà, yuánlái nà wèi nǚshì yě gānghǎo ná cuò le tā yìmóyíyàng de lánsè xínglixiāng, zhèng zháojí de xiǎng liánluò tā ne!' },
+          { zh: '兩人約好下午在市中心的咖啡館門口見面，彼此笑著互相道歉，順利把行李箱換了回來。', py: 'Liǎng rén yuēhǎo xiàwǔ zài shìzhōngxīn de kāfēiguǎn ménkǒu jiànmiàn, bǐcǐ xiàozhe hùxiāng dàoqiàn, shùnlì bǎ xínglixiāng huàn le huílái.' },
+          { zh: '從此以後，大衛都會在行李箱把手上綁一條醒目的絲帶，再也不會拿錯了。', py: 'Cóngcǐ yǐhòu, Dàwèi dōu huì zài xínglixiāng bǎshǒu shàng bǎng yì tiáo xǐngmù de sīdài, zài yě bú huì ná cuò le.' }
+        ]
+      },
+      {
+        id: 'story-5',
+        unit: 'UNIT 1 · 家庭關係與情感',
+        title: '結婚紀念日驚喜下廚',
+        instruction: '這四張圖描寫了一個完整的故事。請想像你正在把這個故事寫給朋友看。請依照四張圖的順序敘述一個有頭有尾（開端、發展、轉折、結局）的完整故事。',
+        targetChars: 220,
+        keyConcepts: ['結婚紀念日', '父母', '驚喜', '做菜', '下廚', '感動', '慶祝'],
+        upgradeTip: '「這個星期六是爸爸媽媽的結婚二十週年紀念日。為了給父母一個驚喜，明華和妹妹決定偷偷準備一頓豐盛的晚餐。兩人在廚房忙得不可開交，好不容易做出色香味俱全的佳餚。當爸爸媽媽下班進門看到滿桌熱騰騰的菜餚時，感動得眼眶都紅了，全家人度過了一個溫馨的夜晚。」',
+        exemplar: [
+          { zh: '這天早上，明華看著牆上的月曆，發現今天正好是爸爸媽媽的結婚紀念日！', py: 'Zhè tiān zǎoshang, Mínghuá kànzhe qiáng shàng de yuèlì, fāxiàn jīntiān zhènghǎo shì bàba māma de jiéhūn jìniànrì!' },
+          { zh: '他悄悄跟妹妹商量：「不如我們今天親自下廚做一頓豐盛的晚餐，給爸媽一個驚喜吧！」', py: 'Tā qiāoqiāo gēn mèimei shāngliang: "Bùrú wǒmen jīntiān qīnzì xiàchú zuò yí dùn fēngshèng de wǎncān, gěi bàmā yí ge jīngxǐ ba!"' },
+          { zh: '下午放學後，兄妹倆趕緊跑進廚房忙碌起來。哥哥負責拿著鍋鏟炒菜，妹妹在一旁認真幫忙洗菜、擺盤。', py: 'Xiàwǔ fàngxué hòu, xiōngmèi liǎ gǎnjǐn pǎojìn chúfáng mánglù qǐlái. Gēge fùzé názhe guōchǎn chǎocài, mèimei zài yìpáng rènzhēn bāngmáng xǐcài, bǎipán.' },
+          { zh: '雖然過程中差點手忙腳亂，但不久之後，香噴噴的飯菜就飄滿了整個屋子。', py: 'Suīrán guòchéng zhōng chàdiǎn shǒumángjiǎoluàn, dàn bùjiǔ zhīhòu, xiāngpēnpēn de fàncài jiù piāomǎn le zhěnggè wūzi.' },
+          { zh: '傍晚六點，爸爸媽媽下班回到家，一推開門就看見餐桌上擺滿了熱騰騰的菜餚。', py: 'Bàngwǎn liù diǎn, bàba māma xiàbān huídào jiā, yì tuīkāi mén jiù kànjiàn cānzhuō shàng bǎimǎn le rèténgteng de càiyáo.' },
+          { zh: '媽媽驚喜得說不出話來，爸爸也開心地稱讚兩個孩子真是長大懂事了。', py: 'Māma jīngxǐ de shuō bu chū huà lái, bàba yě kāixīn de chēngzàn liǎng ge háizi zhēn shì zhǎngdà dǒngshì le.' },
+          { zh: '最後，全家人圍坐在餐桌旁一邊品嚐美食，一邊有說有笑地慶祝這個特別的日子。', py: 'Zuìhòu, quánjiā rén wéizuò zài cānzhuō páng yìbiān pǐncháng měishí, yìbiān yǒushuōyǒuxiào de qìngzhù zhè ge tèbié de rìzi.' },
+          { zh: '雖然明華和妹妹累得滿頭大汗，但看著爸媽幸福的笑容，心裡覺得比吃了蜜還要甜。', py: 'Suīrán Mínghuá hé mèimei lèi de mǎn tóu dà hàn, dàn kànzhe bàmā xìngfú de xiàoróng, xīnlǐ juéde bǐ chī le mì hái yào tián.' }
+        ]
+      }
+    ];
+
+    const EMAIL_PROMPTS = [
+      {
+        id: 'email-1',
+        unit: 'UNIT 2 & 3 · 文化與藝術策劃',
+        title: '文化週展覽主題策劃',
+        sender: '林老師（中文項目負責人）',
+        subject: '學校「中華文化週」展覽策劃意見徵詢',
+        registerType: 'formal',
+        registerLabel: '正式書信語域（對師長：請用「您」、敬稱與禮貌結尾）',
+        body: [
+          '中文班的同學們：',
+          '下個月我們學校將舉辦一年一度的「中華文化週」活動，今年希望能由學生一起參與策劃。為了讓更多全校師生認識中華文化的魅力，請問：',
+          '1. 你最推薦今年展覽採用什麼具體主題？為什麼這個主題能吸引同學？',
+          '2. 除了靜態海報以外，你建議舉辦哪些互動體驗活動與宣傳方式來提高參與度？',
+          '期待你們的寶貴建議！謝謝！'
+        ],
+        instruction: '請閱讀林老師的來信並用中文回信。你必須針對信中提出的兩個問題給予完整且具體的回覆與理由，並注意書信格式與對師長的禮貌語域（Register）。',
+        targetChars: 180,
+        questionKeywords: [
+          ['主題', '展覽', '美食', '節慶', '書法', '藝術', '文化', '推薦'],
+          ['互動', '體驗', '宣傳', '海報', '攤位', '工作坊', '參與']
+        ],
+        upgradeTip: '「尊敬的林老師您好：收到您的來信我感到非常榮幸！針對今年的中華文化週，我最推薦以『傳統節慶與美食文化』作為展覽主題，因為美食最容易引起跨文化共鳴。活動方面，除了展示海報，建議增設書法寫春聯與包餃子工作坊，並透過校園社群媒體發布短片宣傳，相信能吸引大批師生參與。」',
+        exemplar: [
+          { zh: '尊敬的林老師：您好！', py: 'Zūnjìng de Lín lǎoshī: Nín hǎo!' },
+          { zh: '收到您的來信，得知學校下個月即將舉辦「中華文化週」，我感到非常興奮，也很樂意提供一些建議。', py: 'Shōudào nín de láixìn, dézhī xuéxiào xià ge yuè jíjiāng jǔbàn "Zhōnghuá Wénhuà Zhōu", wǒ gǎndào fēicháng xīngfèn, yě hěn lèyì tígōng yìxiē jiànyì.' },
+          { zh: '首先，我最推薦今年以「傳統節慶與飲食文化」作為展覽主題。', py: 'Shǒuxiān, wǒ zuì tuījiàn jīnnián yǐ "Chuántǒng Jiéqìng yǔ Yǐnshí Wénhuà" zuòwéi zhǎnlǎn zhǔtí.' },
+          { zh: '因為飲食不僅是日常生活中最貼近學生的部分，而且每一道節慶食物背後都有深厚的歷史與團圓寓意，最能引發大家的興趣與共鳴。', py: 'Yīnwèi yǐnshí bùjǐn shì rìcháng shēnghuó zhōng zuì tiējìn xuésheng de bùfen, érqiě měi yí dào jiéqìng shíwù bèihòu dōu yǒu shēnhòu de lìshǐ yǔ tuányuán yùyì, zuì néng yǐnfā dàjiā de xìngqù yǔ gòngmíng.' },
+          { zh: '其次，在活動設計方面，除了靜態海報介紹以外，我們可以設立「動手體驗攤位」，例如書法寫春聯、剪紙藝術和包水餃工作坊，讓師生親身參與。', py: 'Qícì, zài huódòng shèjì fāngmiàn, chúle jìngtài hǎibào jièshào yǐwài, wǒmen kěyǐ shèlì "dòngshǒu tǐyàn tānwèi", lìrú shūfǎ xiě chūnlián, jiǎnzhǐ yìshù hé bāo shuǐjiǎo gōngzuòfāng, ràng shīshēng qīnshēn cānyù.' },
+          { zh: '至於宣傳方式，建議利用學校官方 Instagram 發布短片預告，並搭配有獎徵答集章卡，一定能大幅提升同學的參與熱情。', py: 'Zhìyú xuānchuán fāngshì, jiànyì lìyòng xuéxiào guānfāng Instagram fābù duǎnpiàn yùgào, bìng dāpèi yǒujiǎng zhēngdá jízhāngkǎ, yídìng néng dàfú tíshēng tóngxué de cānyù rèqíng.' },
+          { zh: '希望這些想法對您有所幫助！若有需要幫忙的地方，請隨時告訴我。', py: 'Xīwàng zhèxiē xiǎngfǎ duì nín yǒu suǒ bāngzhù! Ruò yǒu xūyào bāngmáng de dìfang, qǐng suíshí gàosu wǒ.' },
+          { zh: '敬祝 教安！學生 李明 敬上', py: 'Jìngzhù jiào’ān! Xuésheng Lǐ Míng jìngshàng' }
+        ]
+      },
+      {
+        id: 'email-2',
+        unit: 'UNIT 6 · 青年環保行動',
+        title: '青年環保行動',
+        sender: '陳明（環保社社長）',
+        subject: '關於下學期「無塑校園行動週」的合作想法',
+        registerType: 'informal',
+        registerLabel: '平輩同儕語域（對同學／朋友：使用「你」、親切自然互動）',
+        body: [
+          '你好！',
+          '我最近和環保社的幹部在籌備下學期的「無塑校園行動週」，希望能減少學校裡一次性塑膠製品的使用。我知道你對環保議題很有想法，想請教你的意見：',
+          '1. 你覺得在我們學校推行「減少一次性塑膠」時，可能會遇到什麼實際困難？該怎麼克服？',
+          '2. 如果要設計一個有趣又有號召力的環保挑戰活動，你有什麼具體的點子？',
+          '期待你的回覆，祝這週學習順利！'
+        ],
+        instruction: '請閱讀環保社社長陳明的來信並回信。請清楚回答信中兩個問題並舉例說明，同時保持與同儕溝通的親切語域（使用「你」）。',
+        targetChars: 180,
+        questionKeywords: [
+          ['困難', '方便', '習慣', '解決', '水壺', '餐盒', '折扣'],
+          ['挑戰', '活動', '比賽', '打卡', '獎勵', '環保']
+        ],
+        upgradeTip: '「陳明你好：很高興收到你的來信！推行無塑校園最大的困難在於同學習慣了外帶杯的便利性，我建議與學校福利社合作，自備環保杯就折價五元，並增設飲水機。至於活動點子，可以舉辦『一週無塑打卡挑戰賽』，集滿五天照片就能兌換小盆栽，既有趣又富有教育意義！」',
+        exemplar: [
+          { zh: '陳明：你好！', py: 'Chén Míng: Nǐ hǎo!' },
+          { zh: '收到你的來信我非常高興！聽說你們正在籌備「無塑校園行動週」，我覺得這個計畫既及時又有意義。', py: 'Shōudào nǐ de láixìn wǒ fēicháng gāoxìng! Tīngshuō nǐmen zhèngzài chóubèi "Wúsù Xiàoyuán Xíngdòng Zhōu", wǒ juéde zhè ge jìhuà jì jíshí yòu yǒu yìyì.' },
+          { zh: '關於推行減少一次性塑膠的困難，我認為最大的阻力是許多同學已經習慣了塑膠袋和外帶飲料杯的便利，一時之間很難改變。', py: 'Guānyú tuīxíng jiǎnshǎo yícìxìng sùjiāo de kùnnan, wǒ rènwéi zuìdà de zǔlì shì xǔduō tóngxué yǐjīng xíguàn le sùjiāodài hé wàidài yǐnliàobēi de biànlì, yìshí zhījiān hěn nán gǎibiàn.' },
+          { zh: '為了克服這個問題，我建議先和學校餐廳合作，只要自備環保杯或環保餐盒就能折價，同時在校園多設幾個免費飲水站與環保袋借用箱。', py: 'Wèile kèfú zhè ge wèntí, wǒ jiànyì xiān hé xuéxiào cāntīng hézuò, zhǐyào zìbèi huánbǎobēi huò huánbǎo cānhé jiù néng zhéjià, tóngshí zài xiàoyuán duō shè jǐ ge miǎnfèi yǐnshuǐzhàn yǔ huánbǎodài jièyòngxiāng.' },
+          { zh: '至於創意挑戰活動，我們可以舉辦「七天減塑打卡賽」，鼓勵大家拍下使用環保餐具的照片上傳社群平台並標記好友。', py: 'Zhìyú chuàngyì tiǎozhàn huódòng, wǒmen kěyǐ jǔbàn "Qī Tiān Jiǎnsù Dǎkǎ Sài", gǔlì dàjiā pāixià shǐyòng huánbǎo cānjù de zhàopiàn shàngchuán shèqún píngtái bìng biāojì hǎoyǒu.' },
+          { zh: '完成挑戰的班級還可以獲得社區服務時數或綠色小盆栽作為獎勵，相信這樣能激發大家的參與動力！', py: 'Wánchéng tiǎozhàn de bānjí hái kěyǐ huòdé shèqū fúwù shíshù huò lǜsè xiǎo pénzāi zuòwéi jiǎnglì, xiāngxìn zhèyàng néng jīfā dàjiā de cānyù dònglì!' },
+          { zh: '如果你需要人手一起設計海報，隨時告訴我，我很樂意幫忙！', py: 'Rúguǒ nǐ xūyào rénshǒu yìqǐ shèjì hǎibào, suíshí gàosu wǒ, wǒ hěn lèyì bāngmáng!' },
+          { zh: '祝 籌備順利！你的朋友 小安', py: 'Zhù chóubèi shùnlì! Nǐ de péngyou Xiǎo’ān' }
+        ]
+      },
+      {
+        id: 'email-3',
+        unit: 'UNIT 5 · 飲食與健康',
+        title: '學校餐廳健康飲食提案',
+        sender: '王主任（學校總務處）',
+        subject: '徵求學生對學校餐廳菜單改進的建議',
+        registerType: 'formal',
+        registerLabel: '正式書信語域（對學校行政主管：請用「您」與敬語）',
+        body: [
+          '各位同學：',
+          '學校最近注意到許多學生反映餐廳的食物選擇太少，而且有些餐點偏油、偏鹹。為了提升大家的飲食健康並讓大家吃得更滿意，總務處計劃在下學期調整菜單。想請問你的看法：',
+          '1. 你希望學校餐廳增加哪些健康又受學生歡迎的餐點？請舉例說明原因。',
+          '2. 除了菜色本身，你對餐廳的供餐價格、營養標示或用餐環境還有什麼改善建議？',
+          '感謝你的回饋！'
+        ],
+        instruction: '請閱讀王主任的來信並用中文回覆。請完整回應兩項詢問並提供具體例子，並維持正式尊重的語域（使用「您」）。',
+        targetChars: 180,
+        questionKeywords: [
+          ['菜色', '健康', '蔬菜', '沙拉', '水果', '少油', '清淡', '餐點'],
+          ['價格', '標示', '環境', '衛生', '排隊', '卡路里', '建議']
+        ],
+        upgradeTip: '「尊敬的王主任您好：感謝您傾聽學生的聲音！菜色方面，我希望能增加色彩豐富的亞洲風味溫沙拉與新鮮水果杯，做到少油少鹽又美味。此外，建議餐廳在餐檯旁清楚標示熱量與過敏原資訊，並增設快速結帳通道以縮短午休排隊時間，讓師生吃得安心又從容。」',
+        exemplar: [
+          { zh: '尊敬的王主任：您好！', py: 'Zūnjìng de Wáng zhǔrèn: Nín hǎo!' },
+          { zh: '非常感謝學校願意重視學生的飲食健康並主動徵求我們的意見。針對餐廳菜單與環境的改進，我想提出以下兩點建議。', py: 'Fēicháng gǎnxiè xuéxiào yuànyì zhòngshì xuésheng de yǐnshí jiànkāng bìng zhǔdòng zhēngqiú wǒmen de yìjiàn. Zhēnduì cāntīng càidān yǔ huánjìng de gǎijìn, wǒ xiǎng tíchū yǐxià liǎng diǎn jiànyì.' },
+          { zh: '首先，在健康菜色方面，我希望能增加多樣化的蔬果和優質蛋白質，例如現做的雞胸肉溫沙拉、清炒時蔬蓋飯，以及無糖豆漿和新鮮水果杯。', py: 'Shǒuxiān, zài jiànkāng càisè fāngmiàn, wǒ xīwàng néng zēngjiā duōyànghuà de shūguǒ hé yōuzhì dànbáizhì, lìrú xiànzuò de jīxiōngròu wēn shālā, qīngchǎo shíshū gàifàn, yǐjí wútáng dòujiāng hé xīnxiān shuǐguǒbēi.' },
+          { zh: '這些餐點既符合少油少鹽的原則，口味也清爽開胃，能讓忙碌的同學在下午上課時更有精神，不會昏昏欲睡。', py: 'Zhèxiē cāndiǎn jì fúhé shǎoyóu shǎoyán de yuánzé, kǒuwèi yě qīngshuǎng kāiwèi, néng ràng mánglù de tóngxué zài xiàwǔ shàngkè shí gèng yǒu jīngshén, bú huì hūnhūnyùshuì.' },
+          { zh: '其次，關於配套與環境，建議在每道菜的牌子旁清楚標註熱量與常見過敏原，方便素食或對堅果過敏的同學挑選。', py: 'Qícì, guānyú pèitào yǔ huánjìng, jiànyì zài měi dào cài de páizi páng qīngchu biāozhù rèliàng yǔ chángjiàn guòmǐnyuán, fāngbiàn sùshí huò duì jiānguǒ guòmǐn de tóngxué tiāoxuǎn.' },
+          { zh: '同時，如果能在中午尖峰時段增開一條自助結帳通道，並加強桌面清潔，整體的用餐品質一定會大幅提升。', py: 'Tóngshí, rúguǒ néng zài zhōngwǔ jiānfēng shíduàn zēngkāi yì tiáo zìzhù jiézhàng tōngdào, bìng jiāqiáng zhuōmiàn qīngjié, zhěngtǐ de yòngcān pǐnzhì yídìng huì dàfú tíshēng.' },
+          { zh: '再次謝謝您對同學健康的關心，期待下學期見到更棒的學校餐廳！', py: 'Zàicì xièxie nín duì tóngxué jiànkāng de guānxīn, qīdài xià xuéqī jiàndào gèng bàng de xuéxiào cāntīng!' },
+          { zh: '敬祝 工作順利！學生 張志豪 敬上', py: 'Jìngzhù gōngzuò shùnlì! Xuésheng Zhāng Zhìháo jìngshàng' }
+        ]
+      },
+      {
+        id: 'email-4',
+        unit: 'UNIT 1 & 2 · 國際交流與接待',
+        title: '接待交換生計畫',
+        sender: '張老師（國際交流處）',
+        subject: '邀請擔任姊妹校交換生接待家庭與活動諮詢',
+        registerType: 'formal',
+        registerLabel: '正式書信語域（對師長：請用「您」、表達意願與文化細節）',
+        body: [
+          '親愛的同學：',
+          '今年春季將有十位來自台北姊妹校的高中交換生來我們學校參訪兩週。我們正在招募熱心的接待同學與家庭，並安排週末的文化交流行程。請問：',
+          '1. 你和你的家人是否願意擔任接待家庭？平時在家中可以安排哪些交流活動幫助交換生適應生活？',
+          '2. 週末時，你會推薦帶交換生去本地哪兩個最具代表性的地方參觀？為什麼？',
+          '請在週五前回信給我，謝謝你！'
+        ],
+        instruction: '請閱讀國際交流處張老師的來信並回覆。請針對是否接待、家中交流活動與週末兩個推薦景點詳細作答，並維持對師長的禮貌語域。',
+        targetChars: 190,
+        questionKeywords: [
+          ['願意', '接待', '家庭', '文化', '交流', '聊天', '做飯'],
+          ['週末', '參觀', '博物館', '公園', '市集', '代表性', '兩個']
+        ],
+        upgradeTip: '「尊敬的張老師您好：我和家人非常樂意擔任本次交換生的接待家庭！在家裡，我們除了用雙語聊天外，還能一起包餃子、做美國家常菜，互相體驗飲食文化。週末時，我推薦帶他參觀市立歷史博物館和熱鬧的農夫市集，讓他深入認識本地的人文歷史與日常生活。」',
+        exemplar: [
+          { zh: '尊敬的張老師：您好！', py: 'Zūnjìng de Zhāng lǎoshī: Nín hǎo!' },
+          { zh: '收到您的來信我感到非常開心！我和家人討論過後，都非常願意擔任這次台北姊妹校交換生的接待家庭。', py: 'Shōudào nín de láixìn wǒ gǎndào fēicháng kāixīn! Wǒ hé jiārén tǎolùn guòhòu, dōu fēicháng yuànyì dānrèn zhè cì Táiběi zǐmèixiào jiāohuànshēng de jiēdài jiātíng.' },
+          { zh: '在平日的生活中，我們除了可以用中、英文互相練習對話，還打算邀請交換生一起下廚，我們教他做美式鬆餅，也請他教我們幾道道地的台灣家常菜。', py: 'Zài píngrì de shēnghuó zhōng, wǒmen chúle kěyǐ yòng Zhōng, Yīngwén hùxiāng liànxí duìhuà, hái dǎsuàn yāoqǐng jiāohuànshēng yìqǐ xiàchú, wǒmen jiāo tā zuò Měishì sōngbǐng, yě qǐng tā jiāo wǒmen jǐ dào dàodì de Táiwān jiāchángcài.' },
+          { zh: '透過日常的餐桌交流和一起看電影，我相信能幫助他很快消除陌生感，感受到家的溫暖。', py: 'Tòuguò rìcháng de cānzhuō jiāoliú hé yìqǐ kàn diànyǐng, wǒ xiāngxìn néng bāngzhù tā hěn kuài xiāochú mòshēnggǎn, gǎnshòudào jiā de wēnnuǎn.' },
+          { zh: '至於週末行程，我會優先推薦兩個地方：第一是市立藝術與歷史博物館，能讓他快速了解我們城市的發展故事。', py: 'Zhìyú zhōumò xíngchéng, wǒ huì yōuxiān tuījiàn liǎng ge dìfang: Dì-yī shì Shìlì Yìshù yǔ Lìshǐ Bówùguǎn, néng ràng tā kuàisù liǎojiě wǒmen chéngshì de fāzhǎn gùshi.' },
+          { zh: '第二是市中心的週末農夫市集，那裡不僅有新鮮農產品和手工藝品，更能讓他親身體驗當地居民熱情友善的社區氛圍。', py: 'Dì-èr shì shìzhōngxīn de zhōumò nóngfū shìjí, nàlǐ bùjǐn yǒu xīnxiān nóngchǎnpǐn hé shǒugōngyìpǐn, gèng néng ràng tā qīnshēn tǐyàn dāngdì jūmín rèqíng yǒushàn de shèqū fēnwéi.' },
+          { zh: '期待能與台灣的朋友建立深厚的友誼！如果有相關表格需要填寫，請您再通知我。', py: 'Qīdài néng yǔ Táiwān de péngyou jiànlì shēnhòu de yǒuyì! Rúguǒ yǒu xiāngguān biǎogé xūyào tiánxiě, qǐng nín zài tōngzhī wǒ.' },
+          { zh: '敬祝 安康！學生 陳雅婷 敬上', py: 'Jìngzhù ānkāng! Xuésheng Chén Yǎtíng jìngshàng' }
+        ]
+      },
+      {
+        id: 'email-5',
+        unit: 'UNIT 2 & 5 · 教育與職業規劃',
+        title: '暑假中文實習與語言營',
+        sender: '李華（多年好友）',
+        subject: '急問！暑假中文實習 vs 語言夏令營該怎麼選？',
+        registerType: 'informal',
+        registerLabel: '平輩好友語域（對摯友：使用「你」、語氣真誠支持）',
+        body: [
+          '嗨！最近還好嗎？',
+          '下個月就要放暑假了，我現在面臨一個選擇：一方面，我收到一家華人社區文化中心的雙語實習錄取通知；另一方面，我也很想去參加一個為期三週的密集中文語言夏令營。我真的好猶豫！',
+          '1. 站在你的角度，你會推薦我參加哪一個？為什麼？',
+          '2. 不管選哪一個，你覺得出發前我應該做哪些準備，才能讓這個暑假收穫最大？',
+          '有空快回我信喔，謝謝你！'
+        ],
+        instruction: '請閱讀好友李華的來信並回信。請清楚給出選擇建議、分析原因，並提供具體的出發前準備建議，同時保持朋友間自然的語域（使用「你」）。',
+        targetChars: 180,
+        questionKeywords: [
+          ['實習', '夏令營', '推薦', '經驗', '口語', '選擇', '原因'],
+          ['準備', '詞彙', '複習', '目標', '筆記', '計劃']
+        ],
+        upgradeTip: '「李華你好：太替你開心了，兩個機會都很棒！考量到你明年要申請大學，我比較推薦社區文化中心的雙語實習，因為除了練習中文，還能累積真實的職場與服務經驗。出發前建議你先複習基本辦公與禮儀用語，並設定每週學會十個新成語的小目標，這個暑假一定會滿載而歸！」',
+        exemplar: [
+          { zh: '李華：你好！', py: 'Lǐ Huá: Nǐ hǎo!' },
+          { zh: '收到你的信真替你高興！能同時得到這兩個這麼好的暑期機會，說明你的中文程度已經很不錯了。', py: 'Shōudào nǐ de xìn zhēn tì nǐ gāoxìng! Néng tóngshí dédào zhè liǎng ge zhème hǎo de shǔqī jīhuì, shuōmíng nǐ de Zhōngwén chéngdù yǐjīng hěn búcuò le.' },
+          { zh: '如果讓我幫你選，我會比較推薦你去參加「華人社區文化中心的雙語實習」。', py: 'Rúguǒ ràng wǒ bāng nǐ xuǎn, wǒ huì bǐjiào tuījiàn nǐ qù cānjiā "Huárén Shèqū Wénhuà Zhōngxīn de shuāngyǔ shíxí".' },
+          { zh: '雖然語言營的課程很系統化，但實習能讓你在真實的環境中用中文跟不同年齡層的華人溝通，不僅口語進步更快，還能累積寶貴的社區服務與工作經驗，對以後申請大學也很有幫助。', py: 'Suīrán yǔyányíng de kèchéng hěn xìtǒnghuà, dàn shíxí néng ràng nǐ zài zhēnshí de huánjìng zhōng yòng Zhōngwén gēn bùtóng niánlíngcéng de Huárén gōutōng, bùjǐn kǒuyǔ jìnbù gèng kuài, hái néng lěijī bǎoguì de shèqū fúwù yǔ gōngzuò jīngyàn, duì yǐhòu shēnqǐng dàxué yě hěn yǒu bāngzhù.' },
+          { zh: '至於出發前的準備，首先你可以先上網了解該文化中心的背景和夏季活動，提前複習相關的服務與禮貌用語。', py: 'Zhìyú chūfā qián de zhǔnbèi, shǒuxiān nǐ kěyǐ xiān shàngwǎng liǎojiě gāi wénhuà zhōngxīn de bèijǐng hé xiàjì huódòng, tíqián fùxí xiāngguān de fúwù yǔ lǐmào yòngyǔ.' },
+          { zh: '其次，我建議你準備一本隨身筆記本，把每天聽到的道地表達或成語記下來，強迫自己當天就拿來用。', py: 'Qícì, wǒ jiànyì nǐ zhǔnbèi yì běn suíshēn bǐjìběn, bǎ měitiān tīngdào de dàodì biǎodá huò chéngyǔ jì xiàlái, qiǎngpò zìjǐ dàngtiān jiù nálái yòng.' },
+          { zh: '相信只要保持開放好奇的心態，你這個暑假一定會收穫滿滿！決定好了記得告訴我喔！', py: 'Xiāngxìn zhǐyào bǎochí kāifàng hàoqí de xīntài, nǐ zhè ge shǔqī yídìng huì shōuhuò mǎnmǎn! Juédìng hǎo le jìde gàosu wǒ o!' },
+          { zh: '祝 一切順利！好友 家豪', py: 'Zhù yíqiè shùnlì! Hǎoyǒu Jiāháo' }
+        ]
+      }
+    ];
+
+    /* Application State */
+    const state = {
+      task: 'story',
+      storyIndex: 0,
+      emailIndex: 0,
+      studentName: '',
+      drafts: {},
+      scriptVariant: 'trad',
+      showPinyin: true,
+      showExemplar: false,
+      unlimitedMode: false,
+      secondsLeft: 900,
+      timerRunning: false
+    };
+
+    let timerInterval = null;
+    let saveDebounce = null;
+
+    function getCurrentPrompt() {
+      return state.task === 'story' ? STORY_PROMPTS[state.storyIndex] : EMAIL_PROMPTS[state.emailIndex];
+    }
+
+    function getDraftKey() {
+      return getCurrentPrompt().id;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    /* State Persistence via Gemini Notebook Shim API */
+    async function persistState() {
+      if (window.notebookAppApi && typeof window.notebookAppApi.setAppState === 'function') {
+        try {
+          await window.notebookAppApi.setAppState({
+            task: state.task,
+            storyIndex: state.storyIndex,
+            emailIndex: state.emailIndex,
+            studentName: state.studentName,
+            drafts: state.drafts,
+            scriptVariant: state.scriptVariant,
+            showPinyin: state.showPinyin,
+            unlimitedMode: state.unlimitedMode
+          });
+        } catch (e) {
+          /* Silent fallback inside sandbox */
+        }
+      }
+    }
+
+    function scheduleSave() {
+      const statusEl = document.getElementById('draft-status');
+      if (statusEl) statusEl.innerHTML = `<i data-lucide="loader-2" aria-hidden="true"></i><span>儲存中…</span>`;
+      if (saveDebounce) clearTimeout(saveDebounce);
+      saveDebounce = setTimeout(async () => {
+        await persistState();
+        const st = document.getElementById('draft-status');
+        if (st) st.innerHTML = `<i data-lucide="check-circle-2" aria-hidden="true"></i><span>草稿已自動儲存</span>`;
+        if (window.lucide) lucide.createIcons();
+      }, 320);
+    }
+
+    /* UI Rendering */
+    function renderPromptSelector() {
+      const select = document.getElementById('prompt-select');
+      if (!select) return;
+      const list = state.task === 'story' ? STORY_PROMPTS : EMAIL_PROMPTS;
+      const idx = state.task === 'story' ? state.storyIndex : state.emailIndex;
+      select.innerHTML = list.map((p, i) => `<option value="${i}" ${i === idx ? 'selected' : ''}>題目 ${i + 1}：${escapeHtml(p.title)}</option>`).join('');
+    }
+
+    function renderPromptContent() {
+      const prompt = getCurrentPrompt();
+      const unitEl = document.getElementById('prompt-unit-tag');
+      const titleEl = document.getElementById('prompt-title');
+      const instEl = document.getElementById('prompt-instruction');
+      const visualEl = document.getElementById('prompt-visual-container');
+      const regHintEl = document.getElementById('register-hint');
+      const targetBadge = document.getElementById('length-target-badge');
+
+      if (unitEl) unitEl.textContent = prompt.unit;
+      if (titleEl) titleEl.textContent = prompt.title;
+      if (instEl) instEl.innerHTML = `<strong>作答要求：</strong>${escapeHtml(prompt.instruction)}`;
+      if (targetBadge) targetBadge.textContent = `目標：${prompt.targetChars}+ 字`;
+
+      if (state.task === 'story') {
+        if (regHintEl) regHintEl.textContent = '語域提示：敘事體（向朋友說故事）';
+        if (visualEl) {
+          /* STRICT REQUIREMENT: NO text hints or captions below comic images, only sequence number */
+          visualEl.innerHTML = `<div class="story-grid">${[0, 1, 2, 3].map(i => `
+            <div class="story-frame" aria-label="第 ${i + 1} 張連環圖">
+              <span class="frame-num">${i + 1}</span>
+              ${renderComicPanel(prompt.id, i)}
+            </div>`).join('')}</div>`;
+        }
+      } else {
+        if (regHintEl) regHintEl.textContent = prompt.registerLabel;
+        if (visualEl) {
+          visualEl.innerHTML = `
+            <article class="email-card">
+              <div class="email-meta-grid">
+                <div class="email-meta-row"><span class="email-meta-key">發件人：</span><strong>${escapeHtml(prompt.sender)}</strong></div>
+                <div class="email-meta-row"><span class="email-meta-key">郵件主題：</span><span>${escapeHtml(prompt.subject)}</span></div>
+              </div>
+              <div class="email-body">
+                ${prompt.body.map(line => `<p>${escapeHtml(line)}</p>`).join('')}
+              </div>
+            </article>`;
+        }
+      }
+
+      const editor = document.getElementById('essay-editor');
+      if (editor) {
+        editor.value = state.drafts[prompt.id] || '';
+      }
+      updateWordStats();
+      renderExemplar();
+      const reportEl = document.getElementById('ai-report');
+      if (reportEl) reportEl.classList.remove('is-visible');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderExemplar() {
+      const prompt = getCurrentPrompt();
+      const bodyEl = document.getElementById('exemplar-body');
+      const btnTrad = document.getElementById('btn-trad');
+      const btnSimp = document.getElementById('btn-simp');
+      const toggleBtn = document.getElementById('toggle-exemplar-btn');
+      const pyBtn = document.getElementById('toggle-pinyin-btn');
+
+      if (btnTrad) btnTrad.setAttribute('aria-selected', state.scriptVariant === 'trad' ? 'true' : 'false');
+      if (btnSimp) btnSimp.setAttribute('aria-selected', state.scriptVariant === 'simp' ? 'true' : 'false');
+
+      if (toggleBtn) {
+        toggleBtn.innerHTML = state.showExemplar
+          ? `<i data-lucide="eye-off" aria-hidden="true"></i><span>隱藏滿分範文</span>`
+          : `<i data-lucide="eye" aria-hidden="true"></i><span>顯示滿分範文</span>`;
+      }
+      if (pyBtn) {
+        pyBtn.innerHTML = state.showPinyin
+          ? `<i data-lucide="languages" aria-hidden="true"></i><span>隱藏拼音</span>`
+          : `<i data-lucide="languages" aria-hidden="true"></i><span>顯示拼音</span>`;
+      }
+
+      if (!bodyEl) return;
+      bodyEl.classList.toggle('is-visible', state.showExemplar);
+      bodyEl.innerHTML = prompt.exemplar.map(item => {
+        const text = state.scriptVariant === 'simp' ? toSimplified(item.zh) : item.zh;
+        return `
+          <div class="sentence-pair">
+            <div class="sentence-zh">${escapeHtml(text)}</div>
+            ${state.showPinyin ? `<div class="sentence-py">${escapeHtml(item.py)}</div>` : ''}
+          </div>`;
+      }).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    /* Word Counting */
+    function countChineseChars(text) {
+      const matches = text.match(/[\u4e00-\u9fff\u3400-\u4dbf]/g);
+      return matches ? matches.length : 0;
+    }
+
+    function updateWordStats() {
+      const editor = document.getElementById('essay-editor');
+      const text = editor ? editor.value : '';
+      const zhCount = countChineseChars(text);
+      const totalCount = text.replace(/\s/g, '').length;
+      const paras = text.trim() ? text.trim().split(/\n+/).filter(p => p.trim().length > 0).length : 0;
+
+      const cEl = document.getElementById('char-count');
+      const tEl = document.getElementById('total-char-count');
+      const pEl = document.getElementById('para-count');
+      if (cEl) cEl.textContent = String(zhCount);
+      if (tEl) tEl.textContent = String(totalCount);
+      if (pEl) pEl.textContent = String(paras);
+    }
+
+    /* Hoisted Event Handlers */
+    function switchTask(task) {
+      if (state.task === task) return;
+      state.task = task;
+      const tabStory = document.getElementById('tab-story');
+      const tabEmail = document.getElementById('tab-email');
+      if (tabStory) tabStory.setAttribute('aria-selected', task === 'story' ? 'true' : 'false');
+      if (tabEmail) tabEmail.setAttribute('aria-selected', task === 'email' ? 'true' : 'false');
+      renderPromptSelector();
+      renderPromptContent();
+      persistState();
+    }
+
+    function selectPrompt(indexStr) {
+      const idx = parseInt(indexStr, 10) || 0;
+      if (state.task === 'story') state.storyIndex = idx;
+      else state.emailIndex = idx;
+      renderPromptContent();
+      persistState();
+    }
+
+    function randomPrompt() {
+      const list = state.task === 'story' ? STORY_PROMPTS : EMAIL_PROMPTS;
+      const curr = state.task === 'story' ? state.storyIndex : state.emailIndex;
+      let next = Math.floor(Math.random() * list.length);
+      if (list.length > 1 && next === curr) {
+        next = (curr + 1) % list.length;
+      }
+      if (state.task === 'story') state.storyIndex = next;
+      else state.emailIndex = next;
+      renderPromptSelector();
+      renderPromptContent();
+      persistState();
+      showNotice(`已隨機切換至題目 ${next + 1}：「${getCurrentPrompt().title}」`);
+    }
+
+    function handleNameInput(val) {
+      state.studentName = val;
+      scheduleSave();
+    }
+
+    function handleEssayInput(val) {
+      state.drafts[getDraftKey()] = val;
+      updateWordStats();
+      scheduleSave();
+    }
+
+    function clearDraft(btn) {
+      if (btn.dataset.armed !== 'true') {
+        btn.dataset.armed = 'true';
+        btn.innerHTML = `<i data-lucide="alert-triangle" aria-hidden="true"></i><span>再點一次確認清空</span>`;
+        if (window.lucide) lucide.createIcons();
+        setTimeout(() => {
+          if (btn.dataset.armed === 'true') {
+            btn.dataset.armed = 'false';
+            btn.innerHTML = `<i data-lucide="trash-2" aria-hidden="true"></i><span>清空重寫</span>`;
+            if (window.lucide) lucide.createIcons();
+          }
+        }, 3500);
+        return;
+      }
+      btn.dataset.armed = 'false';
+      btn.innerHTML = `<i data-lucide="trash-2" aria-hidden="true"></i><span>清空重寫</span>`;
+      const editor = document.getElementById('essay-editor');
+      if (editor) editor.value = '';
+      state.drafts[getDraftKey()] = '';
+      updateWordStats();
+      persistState();
+      const reportEl = document.getElementById('ai-report');
+      if (reportEl) reportEl.classList.remove('is-visible');
+      if (window.lucide) lucide.createIcons();
+      showNotice('已清空本題作答內容。');
+    }
+
+    function setScriptVariant(variant) {
+      state.scriptVariant = variant;
+      renderExemplar();
+      persistState();
+    }
+
+    function togglePinyinDisplay() {
+      state.showPinyin = !state.showPinyin;
+      renderExemplar();
+      persistState();
+    }
+
+    function toggleExemplar() {
+      state.showExemplar = !state.showExemplar;
+      renderExemplar();
+    }
+
+    /* Timer Logic */
+    function renderTimerDisplay() {
+      const el = document.getElementById('timer-display');
+      const btn = document.getElementById('timer-toggle-btn');
+      if (!el) return;
+      if (state.unlimitedMode) {
+        el.textContent = '不限時';
+        el.className = 'timer-readout is-unlimited';
+        if (btn) btn.disabled = true;
+        return;
+      }
+      if (btn) btn.disabled = false;
+      const mins = Math.floor(state.secondsLeft / 60);
+      const secs = state.secondsLeft % 60;
+      el.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      el.className = state.secondsLeft <= 120 ? 'timer-readout is-urgent' : 'timer-readout';
+      if (btn) {
+        btn.innerHTML = state.timerRunning
+          ? `<i data-lucide="pause" aria-hidden="true"></i>`
+          : `<i data-lucide="play" aria-hidden="true"></i>`;
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    function toggleTimer() {
+      if (state.unlimitedMode) return;
+      if (state.timerRunning) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        state.timerRunning = false;
+      } else {
+        if (state.secondsLeft <= 0) state.secondsLeft = 900;
+        state.timerRunning = true;
+        timerInterval = setInterval(() => {
+          if (state.secondsLeft > 0) {
+            state.secondsLeft--;
+            renderTimerDisplay();
+          } else {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            state.timerRunning = false;
+            renderTimerDisplay();
+            showNotice('15 分鐘計時結束！請檢查標點與語域後點選「AI 智能評分」。');
+          }
+        }, 1000);
+      }
+      renderTimerDisplay();
+    }
+
+    function resetTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = null;
+      state.timerRunning = false;
+      state.secondsLeft = 900;
+      renderTimerDisplay();
+    }
+
+    function toggleUnlimitedMode(checked) {
+      state.unlimitedMode = checked;
+      if (checked && timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        state.timerRunning = false;
+      }
+      renderTimerDisplay();
+      persistState();
+    }
+
+    /* Notice helper (replaces alert) */
+    function showNotice(msg, isError = false) {
+      const box = document.getElementById('inline-notice');
+      const txt = document.getElementById('inline-notice-text');
+      if (!box || !txt) return;
+      txt.textContent = msg;
+      box.className = isError ? 'inline-notice is-visible is-error' : 'inline-notice is-visible';
+    }
+    function hideNotice() {
+      const box = document.getElementById('inline-notice');
+      if (box) box.classList.remove('is-visible');
+    }
+
+    /* Official 8-Point Rubric Modal */
+    function openRubricModal() {
+      const m = document.getElementById('rubric-modal');
+      if (m) m.classList.add('is-open');
+    }
+    function closeRubricModal() {
+      const m = document.getElementById('rubric-modal');
+      if (m) m.classList.remove('is-open');
+    }
+    function handleModalBackdropClick(ev) {
+      if (ev.target && ev.target.id === 'rubric-modal') closeRubricModal();
+    }
+
+    /* AI Intelligent Scoring Engine (College Board 8-Point Analytic Rubric) */
+    function runAiDiagnosis() {
+      const editor = document.getElementById('essay-editor');
+      const text = (editor ? editor.value : '').trim();
+      const zhCount = countChineseChars(text);
+      if (zhCount < 15) {
+        showNotice('請至少寫入 15 個中文字，系統才能根據 College Board 8 分制進行有效診斷。', true);
+        return;
+      }
+      hideNotice();
+
+      const prompt = getCurrentPrompt();
+      const isStory = state.task === 'story';
+
+      /* Vocabulary, idioms, connectors, grammar patterns */
+      const connectors = ['首先', '然後', '接著', '接着', '後來', '最后', '最後', '突然', '忽然', '沒想到', '幸好', '還好', '不過', '但是', '然而', '而且', '不僅', '不仅', '雖然', '虽然', '因此', '所以', '總之', '总之', '其次', '另外', '此外', '經過這件事', '经过这件事', '從此', '从此'];
+      const idioms = ['失而復得', '失而复得', '一舉兩得', '一举两得', '大吃一驚', '大吃一惊', '滿頭大汗', '满头大汗', '不知所措', '手忙腳亂', '手忙脚乱', '一模一樣', '一模一样', '量身訂做', '量身定做', '熱騰騰', '热腾腾', '有說有笑', '有说有笑', '滿載而歸', '满载而归', '入鄉隨俗', '入乡随俗', '收穫滿滿', '收获满满', '色香味', '不約而同', '熱心助人', '热心助人', '迫不及待', '津津有味'];
+      const complexPatterns = [/雖然.*?[，,].*?(?:但是|可是|卻|却)/, /不僅.*?[，,].*?(?:而且|還|还)/, /除了.*?以外/, /因為.*?[，,].*?所以/, /如果.*?[，,].*?就/, /越來越/, /把[^，。]{1,8}[放拿擺交洗寫掛送]/, /被[^，。]{1,8}[撿拿打吸引]/, /一邊.*?一邊/];
+
+      const usedConnectors = connectors.filter(c => text.includes(c));
+      const usedIdioms = idioms.filter(id => text.includes(id));
+      const usedPatterns = complexPatterns.filter(re => re.test(text));
+      const uniqueZh = new Set((text.match(/[\u4e00-\u9fff\u3400-\u4dbf]/g) || [])).size;
+      const ttr = zhCount > 0 ? uniqueZh / zhCount : 0;
+
+      const strengths = [];
+      const fixes = [];
+
+      let rowA = 0;
+      let rowANote = '';
+      let rowB = 0;
+      let rowBNote = '';
+      let rowC = 0;
+      let rowCNote = '';
+
+      if (isStory) {
+        /* Story Narration Row A (0-3) */
+        const matchedConcepts = prompt.keyConcepts.filter(k => text.includes(k) || text.includes(toSimplified(k))).length;
+        const hasDialogue = /[「『"“].+?[」』"”]/.test(text);
+        const hasOpeningTime = /(星期|週|周|週末|周末|上個月|上个月|這天|这天|那天|早上|下午|傍晚|去年|最近)/.test(text);
+        const hasEnding = /(最後|最后|從此|从此|經過這|经过这|終於|终于|順利|顺利|開心|开心)/.test(text);
+
+        if (zhCount >= 180 && matchedConcepts >= 3 && hasOpeningTime && hasEnding) {
+          rowA = 3;
+          rowANote = `情節完整涵蓋開端、發展、轉折與結局（約 ${zhCount} 字），故事連貫性佳。`;
+          strengths.push(`成功構築完整的四格敘事弧線，並具備明確的時間設定與合理收尾。`);
+        } else if (zhCount >= 100 && matchedConcepts >= 2) {
+          rowA = 2;
+          rowANote = `涵蓋主要情節（${zhCount} 字），但部分畫面細節、人物姓名或對話仍可再充實。`;
+          fixes.push('Row A 扣分主因：建議為主角命名（如「小明」）、補齊每張圖的動作與心理感受，並加入一句自然對話（如「太好了！」）。');
+        } else {
+          rowA = 1;
+          rowANote = `篇幅較短（${zhCount} 字）或僅簡略描述 1–2 張圖，缺乏連貫敘事細節。`;
+          fixes.push('Row A 扣分主因：字數未達 AP 建議區間（200–300 字），須將四張圖串聯成有因果關係的故事。');
+        }
+        if (hasDialogue) strengths.push('善用人物直接引語／對話，讓故事畫面更加生動立體。');
+        else fixes.push('可加入 1 句人物對話或內心獨白（例如用「……」引出情緒），更容易穩拿 Row A 滿分 3 分。');
+
+        /* Story Narration Row B (0-2) */
+        const paraCount = text.split(/\n+/).filter(p => p.trim()).length;
+        if (usedConnectors.length >= 4 && (paraCount >= 2 || zhCount >= 180)) {
+          rowB = 2;
+          rowBNote = `起承轉合分明，靈活使用 ${usedConnectors.length} 種過渡銜接詞（${usedConnectors.slice(0, 4).join('、')}）。`;
+          strengths.push(`組織流暢，能使用「${usedConnectors.slice(0, 4).join('」、「')}」等時序與轉折連接詞串聯事件。`);
+        } else if (usedConnectors.length >= 2) {
+          rowB = 1;
+          rowBNote = `有基本敘事順序，但過渡詞較單一（僅使用 ${usedConnectors.join('、')}），段落層次可再加強。`;
+          fixes.push('Row B 扣分主因：建議在轉折處加入「突然」、「沒想到」、「幸好」，結尾處加入「最後」、「經過這件事後」。');
+        } else {
+          rowB = 0;
+          rowBNote = '缺少明顯的段落銜接與時間過渡詞，讀起來較像零散句子的堆疊。';
+          fixes.push('Row B 扣分主因：請依照「開始→經過→轉折→結果」分段，並加入至少 4 個時間或因果連接詞。');
+        }
+      } else {
+        /* Email Response Row A (0-3) */
+        const q1Hit = prompt.questionKeywords[0].some(k => text.includes(k) || text.includes(toSimplified(k)));
+        const q2Hit = prompt.questionKeywords[1].some(k => text.includes(k) || text.includes(toSimplified(k)));
+        const hasExamples = /(例如|比如|像是|因為|因为|原因是|這樣|这样|可以讓|可以让)/.test(text);
+
+        if (q1Hit && q2Hit && zhCount >= 140 && hasExamples) {
+          rowA = 3;
+          rowANote = `完整且直接回答來信中的所有提問，並附有具體理由與舉例（${zhCount} 字）。`;
+          strengths.push('精準覆蓋來信要求的兩個核心提問，且每個立場都有具體理由與例子支撐。');
+        } else if ((q1Hit || q2Hit) && zhCount >= 80) {
+          rowA = 2;
+          rowANote = q1Hit && q2Hit
+            ? '雖答出兩個問題，但部分回答缺少「為什麼」的理由或具體舉例（如「例如…」）。'
+            : '僅明顯回應了來信中的其中一個提問，另一項提問的關鍵細節不足。';
+          fixes.push('Row A 扣分主因：回信務必逐題作答，且每題至少補充 1 個原因或具體生活實例（使用「例如…」、「因為…」）。');
+        } else {
+          rowA = 1;
+          rowANote = `回覆過於簡短（${zhCount} 字）或未切中來信的兩項核心請求。`;
+          fixes.push('Row A 扣分主因：請對照左側信件的 1、2 兩點提問，逐項寫出完整回答與支持理由。');
+        }
+
+        /* Email Response Row B (0-2) */
+        const hasGreeting = /(您好|你好|老師|主任|同學|朋友)/.test(text.slice(0, 35));
+        const hasClosing = /(祝|敬祝|敬上|學生|朋友|順頌|安康|順利)/.test(text.slice(-45));
+        if (hasGreeting && hasClosing && usedConnectors.length >= 2) {
+          rowB = 2;
+          rowBNote = '書信格式完整（含稱謂、問候、分段作答、祝詞與署名），邏輯清晰。';
+          strengths.push('符合標準中文書信禮儀（開頭稱呼＋禮貌問候＋分段作答＋結尾祝詞署名）。');
+        } else if (hasGreeting || hasClosing) {
+          rowB = 1;
+          rowBNote = `具備部分書信結構，但缺少${!hasGreeting ? '開頭稱謂與問候' : ''}${(!hasGreeting && !hasClosing) ? '與' : ''}${!hasClosing ? '結尾祝詞／署名' : ''}，或過渡詞偏少。`;
+          if (!hasGreeting) fixes.push('Row B 格式修正：開頭請加上正確稱謂與問候（例如「尊敬的林老師：您好！」或「陳明：你好！」）。');
+          if (!hasClosing) fixes.push('Row B 格式修正：信末請補上祝詞與署名（例如「敬祝 教安！學生 李明 敬上」或「祝 順利！好友 小安」）。');
+        } else {
+          rowB = 0;
+          rowBNote = '缺少電子郵件必備的稱謂、問候與結尾祝詞署名，過渡結構亦不足。';
+          fixes.push('Row B 扣分主因：必須具備完整的五段式書信結構（稱謂→問候→分段答題→結尾祝詞→署名）。');
+        }
+      }
+
+      /* Row C: Language Control & Register (0-3) */
+      const hasFormalYou = text.includes('您');
+      const hasInformalYou = text.includes('你');
+      let registerError = false;
+      if (!isStory) {
+        if (prompt.registerType === 'formal') {
+          if (hasInformalYou && !text.includes('你們')) {
+            registerError = true;
+            fixes.push('語域（Register）重大修正：收件人為師長／主管，內文出現「你」，請改為敬稱「您」以維持全程語域一致！');
+          } else if (hasFormalYou) {
+            strengths.push('對師長全程使用尊稱「您」與禮貌用語，語域（Register）拿捏準確得體。');
+          } else {
+            fixes.push('語域提示：給師長回信建議明確使用「您」（例如「收到您的來信」、「感謝您」），展現高階語域掌控力。');
+          }
+        } else {
+          if (hasFormalYou) {
+            registerError = true;
+            fixes.push('語域（Register）修正：收件人為同輩同學／好友，使用「您」顯得過於生疏，建議改為親切自然的「你」。');
+          } else if (hasInformalYou) {
+            strengths.push('與同儕書信互動自然親切，使用「你」維持一致的平輩語域。');
+          }
+        }
+      }
+
+      /* Punctuation & common typo check */
+      const usesAsciiPunct = /[,.;!?]/.test(text);
+      const hasTraditionalAndSimplifiedMix = /[这们来书馆钱学见]/.test(text) && /[這們來書館錢學見]/.test(text);
+      if (usesAsciiPunct) {
+        fixes.push('標點規範修正：文章中混用了半形英文標點（, . ! ?），請統一使用全形中文標點（，。！？「」）。');
+      }
+      if (hasTraditionalAndSimplifiedMix) {
+        fixes.push('字體一致性提示：文中同時出現繁體字與簡體字，正式 AP 考試建議全程統一使用繁體或簡體其中一種。');
+      }
+
+      const commonTypos = [
+        { bad: '再見了然後', fix: '避免口語重複，可改用「告別後」' },
+        { bad: '因該', fix: '錯別字修正：「因該」應為「應該」' },
+        { bad: '在次', fix: '錯別字修正：「在次」應為「再次」' },
+        { bad: '已後', fix: '錯別字修正：「已後」應為「以後」' },
+        { bad: '以經', fix: '錯別字修正：「以經」應為「已經」' },
+        { bad: '的得混用', check: /高興的|開心的一直|急的滿頭/, fix: '語法用字提示：形容動作程度或狀態補語時，副詞後常用「得」（如「急得滿頭大汗」、「開心得笑起來」），修飾名詞用「的」。' }
+      ];
+      commonTypos.forEach(t => {
+        if (t.bad && text.includes(t.bad)) fixes.push(t.fix);
+        if (t.check && t.check.test(text)) fixes.push(t.fix);
+      });
+
+      const grammarVarietyScore = usedPatterns.length + (usedIdioms.length > 0 ? 1 : 0);
+      if (!registerError && !usesAsciiPunct && grammarVarietyScore >= 2 && (ttr >= 0.42 || zhCount >= 160)) {
+        rowC = 3;
+        rowCNote = '詞彙多元且能靈活運用複合句與成語／文化表達，語域與書寫規範一致。';
+      } else if (grammarVarietyScore >= 1 && !registerError) {
+        rowC = 2;
+        rowCNote = '詞彙與基本句型正確易懂，若再增加 1–2 個成語與進階複合句（如「不僅…而且…」）即可達 3 分。';
+        fixes.push('Row C 升級建議：試著加入「不僅…而且…」、「雖然…但是…」，並點綴 1 個切題成語（如「一舉兩得」、「失而復得」）。');
+      } else {
+        rowC = registerError ? Math.min(2, grammarVarietyScore >= 1 ? 2 : 1) : 1;
+        rowCNote = registerError
+          ? '因語域（您／你）不一致或標點／句型單一，語言控制力評分受限。'
+          : '多為簡單句或詞彙重複度較高，建議拓展複合句與成語運用。';
+      }
+
+      if (usedIdioms.length > 0) {
+        strengths.push(`自然融入文化表達／成語：「${usedIdioms.join('」、「')}」，顯著提升表達深度。`);
+      }
+      if (usedPatterns.length > 0) {
+        strengths.push(`成功運用 ${usedPatterns.length} 種進階複合句型（例如因果、轉折、遞進或把字句）。`);
+      }
+      if (strengths.length === 0) {
+        strengths.push('已用中文完成基本表意，具備清晰的寫作起點。');
+      }
+      if (fixes.length === 0) {
+        fixes.push('整體表現極為出色！建議最後再檢查一次錯別字與全形標點即可安心交卷。');
+      }
+
+      const total = rowA + rowB + rowC;
+      let band = 'AP 表現：待加強（Developing）';
+      let headline = '基礎已具，建議依下方建議補齊細節與結構';
+      if (total >= 7) {
+        band = 'AP 預估：5 分水準（極優異）';
+        headline = '表現優異！符合 AP 高分寫作標準';
+      } else if (total >= 5) {
+        band = 'AP 預估：3–4 分水準（良好）';
+        headline = '結構與表意清楚，微調細節即可衝刺滿分 8 分';
+      }
+
+      /* Populate Report DOM */
+      document.getElementById('report-total-score').textContent = `${total} / 8`;
+      document.getElementById('report-ap-band').textContent = band;
+      document.getElementById('report-headline').textContent = headline;
+      document.getElementById('report-summary').textContent = `本篇作答共 ${zhCount} 個中文字（去重詞彙比例 ${(ttr * 100).toFixed(0)}%），依 College Board 官方 8 分制 Analytic Rubric 評核如下：`;
+
+      document.getElementById('row-a-title').textContent = isStory ? 'Row A · 敘事發展' : 'Row A · 訊息發展';
+      document.getElementById('row-a-score').textContent = `${rowA} / 3`;
+      document.getElementById('row-a-note').textContent = rowANote;
+
+      document.getElementById('row-b-score').textContent = `${rowB} / 2`;
+      document.getElementById('row-b-note').textContent = rowBNote;
+
+      document.getElementById('row-c-score').textContent = `${rowC} / 3`;
+      document.getElementById('row-c-note').textContent = rowCNote;
+
+      document.getElementById('diag-strengths').innerHTML = strengths.map(s => `<li>${escapeHtml(s)}</li>`).join('');
+      document.getElementById('diag-fixes').innerHTML = fixes.map(f => `<li>${escapeHtml(f)}</li>`).join('');
+      document.getElementById('diag-upgrade').textContent = prompt.upgradeTip;
+
+      const reportEl = document.getElementById('ai-report');
+      if (reportEl) {
+        reportEl.classList.add('is-visible');
+        reportEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    /* Package Essay + Full College Board 8-Point Rubric for External LLM */
+    function buildExternalAiPrompt() {
+      const prompt = getCurrentPrompt();
+      const editor = document.getElementById('essay-editor');
+      const essay = (editor ? editor.value : '').trim() || '（學生尚未輸入作答內容）';
+      const taskLabel = state.task === 'story' ? 'Story Narration（看圖說故事，佔寫作第一題）' : 'Email Response（回覆電子信件，佔寫作第二題）';
+      const contextDetail = state.task === 'story'
+        ? `題目主題：${prompt.title}\n作答指導：${prompt.instruction}`
+        : `題目主題：${prompt.title}\n發件人：${prompt.sender}\n信件主旨：${prompt.subject}\n來信內容：\n${prompt.body.join('\n')}`;
+
+      return `你是一位資深的 AP Chinese Language and Culture 閱卷官（AP Reader）。請嚴格依據 College Board 2026 年官方最新「8 分制 Analytic Rubric」批改以下學生作文，並使用繁體中文提供詳細診斷報告。
+
+【寫作任務類型】
+${taskLabel}
+
+【題目情境】
+${contextDetail}
+
+【學生作答內容（共 ${countChineseChars(essay)} 個中文字）】
+${essay}
+
+【College Board 官方 8 分制評分規準（滿分 8 分）】
+1. Row A：${state.task === 'story' ? '敘事發展 Narrative Development（0–3 分）— 是否完整敘述全部 4 張圖、人物細節與自然對話，即使不看圖也清晰連貫。' : '訊息發展 Message Development（0–3 分）— 是否明確回應來信中的所有提問與請求，並提供充分理由與相關舉例。'}
+2. Row B：組織結構 Organization（0–2 分）— ${state.task === 'story' ? '是否具備清楚的起承轉合結構，並自然運用多種過渡與銜接詞。' : '是否邏輯清晰並包含完整中文書信格式（稱謂、問候、分段答題、祝詞、署名）與多樣銜接詞。'}
+3. Row C：語言控制力 Language Control（0–3 分）— 是否靈活運用多元詞彙、成語／文化表達、複合句型，且標點與字體一致；${state.task === 'email' ? '並全程維持正確的社會語言學語域（對師長用「您」／對朋友用「你」）。' : '語法與書寫規範無阻礙理解之錯誤。'}
+
+【請依序輸出以下報告內容】
+1. Row A（?/3）、Row B（?/2）、Row C（?/3）與總得分（?/8）
+2. 具體扣分原因與寫作亮點剖析
+3. 逐句錯別字、病句、標點與語域修正建議
+4. 保留學生原意並升級至 8/8 滿分水準的示範改寫`;
+    }
+
+    async function copyToClipboard(text, successMsg) {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+          showNotice(successMsg);
+          return true;
+        }
+      } catch (e) { /* fallback below */ }
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showNotice(successMsg);
+        return true;
+      } catch (e) {
+        showNotice('無法自動存取剪貼簿，請手動全選複製。', true);
+        return false;
+      }
+    }
+
+    function copyAiPrompt() {
+      copyToClipboard(buildExternalAiPrompt(), '已複製「學生作文 + College Board 8 分制完整評分規準」Prompt，可直接貼到外部 AI（ChatGPT / Claude / Gemini）進行交叉批改！');
+    }
+
+    function copyEssayText() {
+      const editor = document.getElementById('essay-editor');
+      const text = (editor ? editor.value : '').trim();
+      if (!text) {
+        showNotice('目前作答區為空，請先輸入內容。', true);
+        return;
+      }
+      copyToClipboard(text, `已複製全文（共 ${countChineseChars(text)} 個中文字）。`);
+    }
+
+    function downloadSubmission() {
+      const prompt = getCurrentPrompt();
+      const editor = document.getElementById('essay-editor');
+      const text = (editor ? editor.value : '').trim();
+      if (!text) {
+        showNotice('目前作答區為空，請先輸入寫作內容再下載。', true);
+        return;
+      }
+      const student = state.studentName.trim() || '未署名學生';
+      const taskName = state.task === 'story' ? '看圖說故事' : '回覆電子信件';
+      const content = [
+        `AP Chinese Language and Culture 寫作練習作答紀錄`,
+        `==================================================`,
+        `學生姓名：${student}`,
+        `任務類型：${taskName}`,
+        `題目名稱：${prompt.title}`,
+        `中文字數：${countChineseChars(text)} 字`,
+        `匯出時間：${new Date().toLocaleString('zh-TW')}`,
+        `==================================================`,
+        ``,
+        text
+      ].join('\n');
+
+      const filename = `AP_Chinese_${prompt.id}_${student.replace(/\s+/g, '_')}.txt`;
+      if (window.notebookAppApi && typeof window.notebookAppApi.triggerFileDownload === 'function') {
+        window.notebookAppApi.triggerFileDownload({
+          content,
+          contentType: 'text/plain',
+          encoding: 'UTF-8',
+          filename
+        });
+      } else {
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+      showNotice(`已匯出作答檔案：${filename}`);
+    }
+
+    function prepareTeacherEmail(event) {
+      const prompt = getCurrentPrompt();
+      const editor = document.getElementById('essay-editor');
+      const text = (editor ? editor.value : '').trim();
+      if (!text) {
+        if (event) event.preventDefault();
+        showNotice('請先撰寫作答內容，再寄給老師批改。', true);
+        return false;
+      }
+      const student = state.studentName.trim() || '未署名同學';
+      const taskName = state.task === 'story' ? '看圖說故事' : '回覆電子信件';
+      const subject = `[AP 中文寫作作業] ${student} - ${taskName}：${prompt.title}`;
+      const body = [
+        `老師您好：`,
+        ``,
+        `以下為我的 AP 中文寫作練習作業：`,
+        `• 學生姓名：${student}`,
+        `• 任務類型：${taskName}`,
+        `• 題目名稱：${prompt.title}`,
+        `• 中文字數：${countChineseChars(text)} 字`,
+        ``,
+        `--- 作答內容開始 ---`,
+        text,
+        `--- 作答內容結束 ---`
+      ].join('\n');
+
+      const mailtoUrl = `mailto:letsenjoymndarin@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      const btn = document.getElementById('mailto-teacher-btn');
+      if (btn) btn.setAttribute('href', mailtoUrl);
+
+      showNotice('已準備寄送至 letsenjoymndarin@gmail.com。若您的裝置未開啟郵件軟體，也可使用「複製全文」或「下載作答檔案」手動寄出。');
+      return true;
+    }
+
+    /* Init */
+    async function initStudio() {
+      if (window.notebookAppApi && typeof window.notebookAppApi.getAppState === 'function') {
+        try {
+          const saved = await window.notebookAppApi.getAppState();
+          if (saved && typeof saved === 'object') {
+            if (saved.task === 'story' || saved.task === 'email') state.task = saved.task;
+            if (typeof saved.storyIndex === 'number' && saved.storyIndex < STORY_PROMPTS.length) state.storyIndex = saved.storyIndex;
+            if (typeof saved.emailIndex === 'number' && saved.emailIndex < EMAIL_PROMPTS.length) state.emailIndex = saved.emailIndex;
+            if (typeof saved.studentName === 'string') state.studentName = saved.studentName;
+            if (saved.drafts && typeof saved.drafts === 'object') state.drafts = saved.drafts;
+            if (saved.scriptVariant === 'trad' || saved.scriptVariant === 'simp') state.scriptVariant = saved.scriptVariant;
+            if (typeof saved.showPinyin === 'boolean') state.showPinyin = saved.showPinyin;
+            if (typeof saved.unlimitedMode === 'boolean') state.unlimitedMode = saved.unlimitedMode;
+          }
+        } catch (e) { /* ignore initial state errors */ }
+      }
+
+      const nameEl = document.getElementById('student-name');
+      if (nameEl) nameEl.value = state.studentName;
+      const unlimEl = document.getElementById('unlimited-toggle');
+      if (unlimEl) unlimEl.checked = state.unlimitedMode;
+
+      const tabStory = document.getElementById('tab-story');
+      const tabEmail = document.getElementById('tab-email');
+      if (tabStory) tabStory.setAttribute('aria-selected', state.task === 'story' ? 'true' : 'false');
+      if (tabEmail) tabEmail.setAttribute('aria-selected', state.task === 'email' ? 'true' : 'false');
+
+      renderPromptSelector();
+      renderPromptContent();
+      renderTimerDisplay();
+
+      if (window.lucide) lucide.createIcons();
+      if (window.notebookAppApi && typeof window.notebookAppApi.notifyAppReady === 'function') {
+        window.notebookAppApi.notifyAppReady();
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', initStudio);
+  </script>
+</body>
+</html>
